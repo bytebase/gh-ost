@@ -102,7 +102,7 @@ func (this *Applier) InitDBConnections() (err error) {
 	if err := this.readTableColumns(); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Applier initiated on %+v, version %+v", this.connectionConfig.ImpliedKey, this.migrationContext.ApplierMySQLVersion)
+	this.migrationContext.Log.Sugar().Infof("Applier initiated on %+v, version %+v", this.connectionConfig.ImpliedKey, this.migrationContext.ApplierMySQLVersion)
 	return nil
 }
 
@@ -113,13 +113,13 @@ func (this *Applier) validateAndReadTimeZone() error {
 		return err
 	}
 
-	this.migrationContext.Log.Infof("will use time_zone='%s' on applier", this.migrationContext.ApplierTimeZone)
+	this.migrationContext.Log.Sugar().Infof("will use time_zone='%s' on applier", this.migrationContext.ApplierTimeZone)
 	return nil
 }
 
 // readTableColumns reads table columns on applier
 func (this *Applier) readTableColumns() (err error) {
-	this.migrationContext.Log.Infof("Examining table structure on applier")
+	this.migrationContext.Log.Info("Examining table structure on applier")
 	this.migrationContext.OriginalTableColumnsOnApplier, _, err = mysql.GetTableColumns(this.db, this.migrationContext.DatabaseName, this.migrationContext.OriginalTableName)
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (this *Applier) ValidateOrDropExistingTables() error {
 		}
 	}
 	if len(this.migrationContext.GetOldTableName()) > mysql.MaxTableNameLength {
-		this.migrationContext.Log.Fatalf("--timestamp-old-table defined, but resulting table name (%s) is too long (only %d characters allowed)", this.migrationContext.GetOldTableName(), mysql.MaxTableNameLength)
+		this.migrationContext.Log.Sugar().Panicf("--timestamp-old-table defined, but resulting table name (%s) is too long (only %d characters allowed)", this.migrationContext.GetOldTableName(), mysql.MaxTableNameLength)
 	}
 
 	if this.tableExists(this.migrationContext.GetOldTableName()) {
@@ -178,14 +178,14 @@ func (this *Applier) CreateGhostTable() error {
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 	)
-	this.migrationContext.Log.Infof("Creating ghost table %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Creating ghost table %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetGhostTableName()),
 	)
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Ghost table created")
+	this.migrationContext.Log.Info("Ghost table created")
 	return nil
 }
 
@@ -196,15 +196,15 @@ func (this *Applier) AlterGhost() error {
 		sql.EscapeName(this.migrationContext.GetGhostTableName()),
 		this.migrationContext.AlterStatementOptions,
 	)
-	this.migrationContext.Log.Infof("Altering ghost table %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Altering ghost table %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetGhostTableName()),
 	)
-	this.migrationContext.Log.Debugf("ALTER statement: %s", query)
+	this.migrationContext.Log.Sugar().Debugf("ALTER statement: %s", query)
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Ghost table altered")
+	this.migrationContext.Log.Info("Ghost table altered")
 	return nil
 }
 
@@ -215,15 +215,15 @@ func (this *Applier) AlterGhostAutoIncrement() error {
 		sql.EscapeName(this.migrationContext.GetGhostTableName()),
 		this.migrationContext.OriginalTableAutoIncrement,
 	)
-	this.migrationContext.Log.Infof("Altering ghost table AUTO_INCREMENT value %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Altering ghost table AUTO_INCREMENT value %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetGhostTableName()),
 	)
-	this.migrationContext.Log.Debugf("AUTO_INCREMENT ALTER statement: %s", query)
+	this.migrationContext.Log.Sugar().Debugf("AUTO_INCREMENT ALTER statement: %s", query)
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Ghost table AUTO_INCREMENT altered")
+	this.migrationContext.Log.Info("Ghost table AUTO_INCREMENT altered")
 	return nil
 }
 
@@ -244,14 +244,14 @@ func (this *Applier) CreateChangelogTable() error {
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetChangelogTableName()),
 	)
-	this.migrationContext.Log.Infof("Creating changelog table %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Creating changelog table %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetChangelogTableName()),
 	)
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Changelog table created")
+	this.migrationContext.Log.Info("Changelog table created")
 	return nil
 }
 
@@ -261,14 +261,14 @@ func (this *Applier) dropTable(tableName string) error {
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(tableName),
 	)
-	this.migrationContext.Log.Infof("Dropping table %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Dropping table %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(tableName),
 	)
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Table dropped")
+	this.migrationContext.Log.Info("Table dropped")
 	return nil
 }
 
@@ -335,7 +335,8 @@ func (this *Applier) InitiateHeartbeat() {
 		if _, err := this.WriteChangelog("heartbeat", time.Now().Format(time.RFC3339Nano)); err != nil {
 			numSuccessiveFailures++
 			if numSuccessiveFailures > this.migrationContext.MaxRetries() {
-				return this.migrationContext.Log.Errore(err)
+				this.migrationContext.Log.Error(err.Error())
+				return err
 			}
 		} else {
 			numSuccessiveFailures = 0
@@ -370,14 +371,15 @@ func (this *Applier) ExecuteThrottleQuery() (int64, error) {
 	}
 	var result int64
 	if err := this.db.QueryRow(throttleQuery).Scan(&result); err != nil {
-		return 0, this.migrationContext.Log.Errore(err)
+		this.migrationContext.Log.Error(err.Error())
+		return 0, err
 	}
 	return result, nil
 }
 
 // ReadMigrationMinValues returns the minimum values to be iterated on rowcopy
 func (this *Applier) ReadMigrationMinValues(uniqueKey *sql.UniqueKey) error {
-	this.migrationContext.Log.Debugf("Reading migration range according to key: %s", uniqueKey.Name)
+	this.migrationContext.Log.Sugar().Debugf("Reading migration range according to key: %s", uniqueKey.Name)
 	query, err := sql.BuildUniqueKeyMinValuesPreparedQuery(this.migrationContext.DatabaseName, this.migrationContext.OriginalTableName, &uniqueKey.Columns)
 	if err != nil {
 		return err
@@ -392,7 +394,7 @@ func (this *Applier) ReadMigrationMinValues(uniqueKey *sql.UniqueKey) error {
 			return err
 		}
 	}
-	this.migrationContext.Log.Infof("Migration min values: [%s]", this.migrationContext.MigrationRangeMinValues)
+	this.migrationContext.Log.Sugar().Infof("Migration min values: [%s]", this.migrationContext.MigrationRangeMinValues)
 
 	err = rows.Err()
 	return err
@@ -400,7 +402,7 @@ func (this *Applier) ReadMigrationMinValues(uniqueKey *sql.UniqueKey) error {
 
 // ReadMigrationMaxValues returns the maximum values to be iterated on rowcopy
 func (this *Applier) ReadMigrationMaxValues(uniqueKey *sql.UniqueKey) error {
-	this.migrationContext.Log.Debugf("Reading migration range according to key: %s", uniqueKey.Name)
+	this.migrationContext.Log.Sugar().Debugf("Reading migration range according to key: %s", uniqueKey.Name)
 	query, err := sql.BuildUniqueKeyMaxValuesPreparedQuery(this.migrationContext.DatabaseName, this.migrationContext.OriginalTableName, &uniqueKey.Columns)
 	if err != nil {
 		return err
@@ -415,7 +417,7 @@ func (this *Applier) ReadMigrationMaxValues(uniqueKey *sql.UniqueKey) error {
 			return err
 		}
 	}
-	this.migrationContext.Log.Infof("Migration max values: [%s]", this.migrationContext.MigrationRangeMaxValues)
+	this.migrationContext.Log.Sugar().Infof("Migration max values: [%s]", this.migrationContext.MigrationRangeMaxValues)
 
 	err = rows.Err()
 	return err
@@ -478,7 +480,7 @@ func (this *Applier) CalculateNextIterationRangeEndValues() (hasFurtherRange boo
 			return hasFurtherRange, nil
 		}
 	}
-	this.migrationContext.Log.Debugf("Iteration complete: no further range to iterate")
+	this.migrationContext.Log.Debug("Iteration complete: no further range to iterate")
 	return hasFurtherRange, nil
 }
 
@@ -536,7 +538,7 @@ func (this *Applier) ApplyIterationInsertQuery() (chunkSize int64, rowsAffected 
 	}
 	rowsAffected, _ = sqlResult.RowsAffected()
 	duration = time.Since(startTime)
-	this.migrationContext.Log.Debugf(
+	this.migrationContext.Log.Sugar().Debugf(
 		"Issued INSERT on range: [%s]..[%s]; iteration: %d; chunk-size: %d",
 		this.migrationContext.MigrationIterationRangeMinValues,
 		this.migrationContext.MigrationIterationRangeMaxValues,
@@ -551,7 +553,7 @@ func (this *Applier) LockOriginalTable() error {
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 	)
-	this.migrationContext.Log.Infof("Locking %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Locking %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 	)
@@ -559,18 +561,18 @@ func (this *Applier) LockOriginalTable() error {
 	if _, err := sqlutils.ExecNoPrepare(this.singletonDB, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Table locked")
+	this.migrationContext.Log.Info("Table locked")
 	return nil
 }
 
 // UnlockTables makes tea. No wait, it unlocks tables.
 func (this *Applier) UnlockTables() error {
 	query := `unlock /* gh-ost */ tables`
-	this.migrationContext.Log.Infof("Unlocking tables")
+	this.migrationContext.Log.Info("Unlocking tables")
 	if _, err := sqlutils.ExecNoPrepare(this.singletonDB, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Tables unlocked")
+	this.migrationContext.Log.Info("Tables unlocked")
 	return nil
 }
 
@@ -584,7 +586,7 @@ func (this *Applier) SwapTablesQuickAndBumpy() error {
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 		sql.EscapeName(this.migrationContext.GetOldTableName()),
 	)
-	this.migrationContext.Log.Infof("Renaming original table")
+	this.migrationContext.Log.Info("Renaming original table")
 	this.migrationContext.RenameTablesStartTime = time.Now()
 	if _, err := sqlutils.ExecNoPrepare(this.singletonDB, query); err != nil {
 		return err
@@ -594,13 +596,13 @@ func (this *Applier) SwapTablesQuickAndBumpy() error {
 		sql.EscapeName(this.migrationContext.GetGhostTableName()),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 	)
-	this.migrationContext.Log.Infof("Renaming ghost table")
+	this.migrationContext.Log.Info("Renaming ghost table")
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
 	this.migrationContext.RenameTablesEndTime = time.Now()
 
-	this.migrationContext.Log.Infof("Tables renamed")
+	this.migrationContext.Log.Info("Tables renamed")
 	return nil
 }
 
@@ -619,7 +621,7 @@ func (this *Applier) RenameTablesRollback() (renameError error) {
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 	)
-	this.migrationContext.Log.Infof("Renaming back both tables")
+	this.migrationContext.Log.Info("Renaming back both tables")
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err == nil {
 		return nil
 	}
@@ -630,7 +632,7 @@ func (this *Applier) RenameTablesRollback() (renameError error) {
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetGhostTableName()),
 	)
-	this.migrationContext.Log.Infof("Renaming back to ghost table")
+	this.migrationContext.Log.Info("Renaming back to ghost table")
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		renameError = err
 	}
@@ -640,11 +642,12 @@ func (this *Applier) RenameTablesRollback() (renameError error) {
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 	)
-	this.migrationContext.Log.Infof("Renaming back to original table")
+	this.migrationContext.Log.Info("Renaming back to original table")
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		renameError = err
 	}
-	return this.migrationContext.Log.Errore(renameError)
+	this.migrationContext.Log.Error(renameError.Error())
+	return renameError
 }
 
 // StopSlaveIOThread is applicable with --test-on-replica; it stops the IO thread, duh.
@@ -652,44 +655,44 @@ func (this *Applier) RenameTablesRollback() (renameError error) {
 // and have them written to the binary log, so that we can then read them via streamer.
 func (this *Applier) StopSlaveIOThread() error {
 	query := `stop /* gh-ost */ slave io_thread`
-	this.migrationContext.Log.Infof("Stopping replication IO thread")
+	this.migrationContext.Log.Info("Stopping replication IO thread")
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Replication IO thread stopped")
+	this.migrationContext.Log.Info("Replication IO thread stopped")
 	return nil
 }
 
 // StartSlaveIOThread is applicable with --test-on-replica
 func (this *Applier) StartSlaveIOThread() error {
 	query := `start /* gh-ost */ slave io_thread`
-	this.migrationContext.Log.Infof("Starting replication IO thread")
+	this.migrationContext.Log.Info("Starting replication IO thread")
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Replication IO thread started")
+	this.migrationContext.Log.Info("Replication IO thread started")
 	return nil
 }
 
 // StartSlaveSQLThread is applicable with --test-on-replica
 func (this *Applier) StopSlaveSQLThread() error {
 	query := `stop /* gh-ost */ slave sql_thread`
-	this.migrationContext.Log.Infof("Verifying SQL thread is stopped")
+	this.migrationContext.Log.Info("Verifying SQL thread is stopped")
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("SQL thread stopped")
+	this.migrationContext.Log.Info("SQL thread stopped")
 	return nil
 }
 
 // StartSlaveSQLThread is applicable with --test-on-replica
 func (this *Applier) StartSlaveSQLThread() error {
 	query := `start /* gh-ost */ slave sql_thread`
-	this.migrationContext.Log.Infof("Verifying SQL thread is running")
+	this.migrationContext.Log.Info("Verifying SQL thread is running")
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("SQL thread started")
+	this.migrationContext.Log.Info("SQL thread started")
 	return nil
 }
 
@@ -706,7 +709,7 @@ func (this *Applier) StopReplication() error {
 	if err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Replication IO thread at %+v. SQL thread is at %+v", *readBinlogCoordinates, *executeBinlogCoordinates)
+	this.migrationContext.Log.Sugar().Infof("Replication IO thread at %+v. SQL thread is at %+v", *readBinlogCoordinates, *executeBinlogCoordinates)
 	return nil
 }
 
@@ -718,7 +721,7 @@ func (this *Applier) StartReplication() error {
 	if err := this.StartSlaveSQLThread(); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Replication started")
+	this.migrationContext.Log.Info("Replication started")
 	return nil
 }
 
@@ -732,7 +735,7 @@ func (this *Applier) ExpectUsedLock(sessionId int64) error {
 	var result int64
 	query := `select is_used_lock(?)`
 	lockName := this.GetSessionLockName(sessionId)
-	this.migrationContext.Log.Infof("Checking session lock: %s", lockName)
+	this.migrationContext.Log.Sugar().Infof("Checking session lock: %s", lockName)
 	if err := this.db.QueryRow(query, lockName).Scan(&result); err != nil || result != sessionId {
 		return fmt.Errorf("Session lock %s expected to be found but wasn't", lockName)
 	}
@@ -767,7 +770,7 @@ func (this *Applier) ExpectProcess(sessionId int64, stateHint, infoHint string) 
 // DropAtomicCutOverSentryTableIfExists checks if the "old" table name
 // happens to be a cut-over magic table; if so, it drops it.
 func (this *Applier) DropAtomicCutOverSentryTableIfExists() error {
-	this.migrationContext.Log.Infof("Looking for magic cut-over table")
+	this.migrationContext.Log.Info("Looking for magic cut-over table")
 	tableName := this.migrationContext.GetOldTableName()
 	rowMap := this.showTableStatus(tableName)
 	if rowMap == nil {
@@ -777,7 +780,7 @@ func (this *Applier) DropAtomicCutOverSentryTableIfExists() error {
 	if rowMap["Comment"].String != atomicCutOverMagicHint {
 		return fmt.Errorf("Expected magic comment on %s, did not find it", tableName)
 	}
-	this.migrationContext.Log.Infof("Dropping magic cut-over table")
+	this.migrationContext.Log.Info("Dropping magic cut-over table")
 	return this.dropTable(tableName)
 }
 
@@ -797,14 +800,14 @@ func (this *Applier) CreateAtomicCutOverSentryTable() error {
 		this.migrationContext.TableEngine,
 		atomicCutOverMagicHint,
 	)
-	this.migrationContext.Log.Infof("Creating magic cut-over table %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Creating magic cut-over table %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(tableName),
 	)
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Infof("Magic cut-over table created")
+	this.migrationContext.Log.Info("Magic cut-over table created")
 
 	return nil
 }
@@ -833,7 +836,7 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 	lockResult := 0
 	query := `select get_lock(?, 0)`
 	lockName := this.GetSessionLockName(sessionId)
-	this.migrationContext.Log.Infof("Grabbing voluntary lock: %s", lockName)
+	this.migrationContext.Log.Sugar().Infof("Grabbing voluntary lock: %s", lockName)
 	if err := tx.QueryRow(query, lockName).Scan(&lockResult); err != nil || lockResult != 1 {
 		err := fmt.Errorf("Unable to acquire lock %s", lockName)
 		tableLocked <- err
@@ -841,7 +844,7 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 	}
 
 	tableLockTimeoutSeconds := this.migrationContext.CutOverLockTimeoutSeconds * 2
-	this.migrationContext.Log.Infof("Setting LOCK timeout as %d seconds", tableLockTimeoutSeconds)
+	this.migrationContext.Log.Sugar().Infof("Setting LOCK timeout as %d seconds", tableLockTimeoutSeconds)
 	query = fmt.Sprintf(`set session lock_wait_timeout:=%d`, tableLockTimeoutSeconds)
 	if _, err := tx.Exec(query); err != nil {
 		tableLocked <- err
@@ -859,7 +862,7 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetOldTableName()),
 	)
-	this.migrationContext.Log.Infof("Locking %s.%s, %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Locking %s.%s, %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 		sql.EscapeName(this.migrationContext.DatabaseName),
@@ -870,7 +873,7 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 		tableLocked <- err
 		return err
 	}
-	this.migrationContext.Log.Infof("Tables locked")
+	this.migrationContext.Log.Info("Tables locked")
 	tableLocked <- nil // No error.
 
 	// From this point on, we are committed to UNLOCK TABLES. No matter what happens,
@@ -879,11 +882,11 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 	// The cut-over phase will proceed to apply remaining backlog onto ghost table,
 	// and issue RENAME. We wait here until told to proceed.
 	<-okToUnlockTable
-	this.migrationContext.Log.Infof("Will now proceed to drop magic table and unlock tables")
+	this.migrationContext.Log.Info("Will now proceed to drop magic table and unlock tables")
 
 	// The magic table is here because we locked it. And we are the only ones allowed to drop it.
 	// And in fact, we will:
-	this.migrationContext.Log.Infof("Dropping magic cut-over table")
+	this.migrationContext.Log.Info("Dropping magic cut-over table")
 	query = fmt.Sprintf(`drop /* gh-ost */ table if exists %s.%s`,
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetOldTableName()),
@@ -891,13 +894,13 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 
 	dropCutOverSentryTableOnce.Do(func() {
 		if _, err := tx.Exec(query); err != nil {
-			this.migrationContext.Log.Errore(err)
+			this.migrationContext.Log.Error(err.Error())
 			// We DO NOT return here because we must `UNLOCK TABLES`!
 		}
 	})
 
 	// Tables still locked
-	this.migrationContext.Log.Infof("Releasing lock from %s.%s, %s.%s",
+	this.migrationContext.Log.Sugar().Infof("Releasing lock from %s.%s, %s.%s",
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 		sql.EscapeName(this.migrationContext.DatabaseName),
@@ -906,9 +909,10 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 	query = `unlock tables`
 	if _, err := tx.Exec(query); err != nil {
 		tableUnlocked <- err
-		return this.migrationContext.Log.Errore(err)
+		this.migrationContext.Log.Error(err.Error())
+		return err
 	}
-	this.migrationContext.Log.Infof("Tables unlocked")
+	this.migrationContext.Log.Info("Tables unlocked")
 	tableUnlocked <- nil
 	return nil
 }
@@ -930,7 +934,7 @@ func (this *Applier) AtomicCutoverRename(sessionIdChan chan int64, tablesRenamed
 	}
 	sessionIdChan <- sessionId
 
-	this.migrationContext.Log.Infof("Setting RENAME timeout as %d seconds", this.migrationContext.CutOverLockTimeoutSeconds)
+	this.migrationContext.Log.Sugar().Infof("Setting RENAME timeout as %d seconds", this.migrationContext.CutOverLockTimeoutSeconds)
 	query := fmt.Sprintf(`set session lock_wait_timeout:=%d`, this.migrationContext.CutOverLockTimeoutSeconds)
 	if _, err := tx.Exec(query); err != nil {
 		return err
@@ -946,13 +950,14 @@ func (this *Applier) AtomicCutoverRename(sessionIdChan chan int64, tablesRenamed
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.OriginalTableName),
 	)
-	this.migrationContext.Log.Infof("Issuing and expecting this to block: %s", query)
+	this.migrationContext.Log.Sugar().Infof("Issuing and expecting this to block: %s", query)
 	if _, err := tx.Exec(query); err != nil {
 		tablesRenamed <- err
-		return this.migrationContext.Log.Errore(err)
+		this.migrationContext.Log.Error(err.Error())
+		return err
 	}
 	tablesRenamed <- nil
-	this.migrationContext.Log.Infof("Tables renamed")
+	this.migrationContext.Log.Info("Tables renamed")
 	return nil
 }
 
@@ -1067,19 +1072,20 @@ func (this *Applier) ApplyDMLEventQueries(dmlEvents [](*binlog.BinlogDMLEvent)) 
 	}()
 
 	if err != nil {
-		return this.migrationContext.Log.Errore(err)
+		this.migrationContext.Log.Error(err.Error())
+		return err
 	}
 	// no error
 	atomic.AddInt64(&this.migrationContext.TotalDMLEventsApplied, int64(len(dmlEvents)))
 	if this.migrationContext.CountTableRows {
 		atomic.AddInt64(&this.migrationContext.RowsDeltaEstimate, totalDelta)
 	}
-	this.migrationContext.Log.Debugf("ApplyDMLEventQueries() applied %d events in one transaction", len(dmlEvents))
+	this.migrationContext.Log.Sugar().Debugf("ApplyDMLEventQueries() applied %d events in one transaction", len(dmlEvents))
 	return nil
 }
 
 func (this *Applier) Teardown() {
-	this.migrationContext.Log.Debugf("Tearing down...")
+	this.migrationContext.Log.Debug("Tearing down...")
 	this.db.Close()
 	this.singletonDB.Close()
 	atomic.StoreInt64(&this.finishedMigrating, 1)

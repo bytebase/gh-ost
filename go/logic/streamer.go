@@ -161,7 +161,7 @@ func (this *EventsStreamer) readCurrentBinlogCoordinates() error {
 	if !foundMasterStatus {
 		return fmt.Errorf("Got no results from SHOW MASTER STATUS. Bailing out")
 	}
-	this.migrationContext.Log.Debugf("Streamer binlog coordinates: %+v", *this.initialBinlogCoordinates)
+	this.migrationContext.Log.Sugar().Debugf("Streamer binlog coordinates: %+v", *this.initialBinlogCoordinates)
 	return nil
 }
 
@@ -187,7 +187,7 @@ func (this *EventsStreamer) StreamEvents(canStopStreaming func() bool) error {
 				return nil
 			}
 
-			this.migrationContext.Log.Infof("StreamEvents encountered unexpected error: %+v", err)
+			this.migrationContext.Log.Sugar().Infof("StreamEvents encountered unexpected error: %+v", err)
 			this.migrationContext.MarkPointOfInterest()
 			time.Sleep(ReconnectStreamerSleepSeconds * time.Second)
 
@@ -203,7 +203,7 @@ func (this *EventsStreamer) StreamEvents(canStopStreaming func() bool) error {
 
 			// Reposition at same binlog file.
 			lastAppliedRowsEventHint = this.binlogReader.LastAppliedRowsEventHint
-			this.migrationContext.Log.Infof("Reconnecting... Will resume at %+v", lastAppliedRowsEventHint)
+			this.migrationContext.Log.Sugar().Infof("Reconnecting... Will resume at %+v", lastAppliedRowsEventHint)
 			if err := this.initBinlogReader(this.GetReconnectBinlogCoordinates()); err != nil {
 				return err
 			}
@@ -214,7 +214,7 @@ func (this *EventsStreamer) StreamEvents(canStopStreaming func() bool) error {
 
 func (this *EventsStreamer) Close() (err error) {
 	err = this.binlogReader.Close()
-	this.migrationContext.Log.Infof("Closed streamer connection. err=%+v", err)
+	this.migrationContext.Log.Sugar().Infof("Closed streamer connection. err=%+v", err)
 	return err
 }
 
