@@ -8,13 +8,8 @@ package base
 import (
 	"testing"
 
-	"github.com/openark/golib/log"
 	test "github.com/openark/golib/tests"
 )
-
-func init() {
-	log.SetLevel(log.ERROR)
-}
 
 func TestStringContainsAll(t *testing.T) {
 	s := `insert,delete,update`
