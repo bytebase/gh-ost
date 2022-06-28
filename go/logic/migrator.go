@@ -213,7 +213,7 @@ func (this *Migrator) onChangelogEvent(dmlEvent *binlog.BinlogDMLEvent) (err err
 func (this *Migrator) onChangelogStateEvent(dmlEvent *binlog.BinlogDMLEvent) (err error) {
 	changelogStateString := dmlEvent.NewColumnValues.StringColumn(3)
 	changelogState := ReadChangelogState(changelogStateString)
-	this.migrationContext.Log.Sugar().Infof("Intercepted changelog state %s", changelogState)
+	this.migrationContext.Log.Infof("Intercepted changelog state %s", changelogState)
 	switch changelogState {
 	case GhostTableMigrated:
 		{
@@ -239,7 +239,7 @@ func (this *Migrator) onChangelogStateEvent(dmlEvent *binlog.BinlogDMLEvent) (er
 			return fmt.Errorf("Unknown changelog state: %+v", changelogState)
 		}
 	}
-	this.migrationContext.Log.Sugar().Infof("Handled changelog state %s", changelogState)
+	this.migrationContext.Log.Infof("Handled changelog state %s", changelogState)
 	return nil
 }
 
@@ -248,8 +248,7 @@ func (this *Migrator) onChangelogHeartbeatEvent(dmlEvent *binlog.BinlogDMLEvent)
 
 	heartbeatTime, err := time.Parse(time.RFC3339Nano, changelogHeartbeatString)
 	if err != nil {
-		this.migrationContext.Log.Error(err.Error())
-		return err
+		return this.migrationContext.Log.Errore(err)
 	} else {
 		this.migrationContext.SetLastHeartbeatOnChangelogTime(heartbeatTime)
 		return nil
@@ -259,7 +258,7 @@ func (this *Migrator) onChangelogHeartbeatEvent(dmlEvent *binlog.BinlogDMLEvent)
 // listenOnPanicAbort aborts on abort request
 func (this *Migrator) listenOnPanicAbort() {
 	err := <-this.migrationContext.PanicAbort
-	this.migrationContext.Log.Panic(err.Error())
+	this.migrationContext.Log.Fatale(err)
 }
 
 // validateStatement validates the `alter` statement meets criteria.
@@ -275,7 +274,7 @@ func (this *Migrator) validateStatement() (err error) {
 		if !this.migrationContext.ApproveRenamedColumns {
 			return fmt.Errorf("gh-ost believes the ALTER statement renames columns, as follows: %v; as precaution, you are asked to confirm gh-ost is correct, and provide with `--approve-renamed-columns`, and we're all happy. Or you can skip renamed columns via `--skip-renamed-columns`, in which case column data may be lost", this.parser.GetNonTrivialRenames())
 		}
-		this.migrationContext.Log.Sugar().Infof("Alter statement has column(s) renamed. gh-ost finds the following renames: %v; --approve-renamed-columns is given and so migration proceeds.", this.parser.GetNonTrivialRenames())
+		this.migrationContext.Log.Infof("Alter statement has column(s) renamed. gh-ost finds the following renames: %v; --approve-renamed-columns is given and so migration proceeds.", this.parser.GetNonTrivialRenames())
 	}
 	this.migrationContext.DroppedColumnsMap = this.parser.DroppedColumnsMap()
 	return nil
@@ -287,7 +286,7 @@ func (this *Migrator) countTableRows() (err error) {
 		return nil
 	}
 	if this.migrationContext.Noop {
-		this.migrationContext.Log.Debug("Noop operation; not really counting table rows")
+		this.migrationContext.Log.Debugf("Noop operation; not really counting table rows")
 		return nil
 	}
 
@@ -302,7 +301,7 @@ func (this *Migrator) countTableRows() (err error) {
 	}
 
 	if this.migrationContext.ConcurrentCountTableRows {
-		this.migrationContext.Log.Info("As instructed, counting rows in the background; meanwhile I will use an estimated count, and will update it later on")
+		this.migrationContext.Log.Infof("As instructed, counting rows in the background; meanwhile I will use an estimated count, and will update it later on")
 		go countRowsFunc()
 		// and we ignore errors, because this turns to be a background job
 		return nil
@@ -314,11 +313,9 @@ func (this *Migrator) createFlagFiles() (err error) {
 	if this.migrationContext.PostponeCutOverFlagFile != "" {
 		if !base.FileExists(this.migrationContext.PostponeCutOverFlagFile) {
 			if err := base.TouchFile(this.migrationContext.PostponeCutOverFlagFile); err != nil {
-				err := fmt.Errorf("--postpone-cut-over-flag-file indicated by gh-ost is unable to create said file: %s", err.Error())
-				this.migrationContext.Log.Error(err.Error())
-				return err
+				return this.migrationContext.Log.Errorf("--postpone-cut-over-flag-file indicated by gh-ost is unable to create said file: %s", err.Error())
 			}
-			this.migrationContext.Log.Sugar().Infof("Created postpone-cut-over-flag-file: %s", this.migrationContext.PostponeCutOverFlagFile)
+			this.migrationContext.Log.Infof("Created postpone-cut-over-flag-file: %s", this.migrationContext.PostponeCutOverFlagFile)
 		}
 	}
 	return nil
@@ -326,7 +323,7 @@ func (this *Migrator) createFlagFiles() (err error) {
 
 // Migrate executes the complete migration logic. This is *the* major gh-ost function.
 func (this *Migrator) Migrate() (err error) {
-	this.migrationContext.Log.Sugar().Infof("Migrating %s.%s", sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.OriginalTableName))
+	this.migrationContext.Log.Infof("Migrating %s.%s", sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.OriginalTableName))
 	this.migrationContext.StartTime = time.Now()
 	if this.migrationContext.Hostname, err = os.Hostname(); err != nil {
 		return err
@@ -365,9 +362,9 @@ func (this *Migrator) Migrate() (err error) {
 	}
 
 	initialLag, _ := this.inspector.getReplicationLag()
-	this.migrationContext.Log.Sugar().Infof("Waiting for ghost table to be migrated. Current lag is %+v", initialLag)
+	this.migrationContext.Log.Infof("Waiting for ghost table to be migrated. Current lag is %+v", initialLag)
 	<-this.ghostTableMigrated
-	this.migrationContext.Log.Debug("ghost table migrated")
+	this.migrationContext.Log.Debugf("ghost table migrated")
 	// Yay! We now know the Ghost and Changelog tables are good to examine!
 	// When running on replica, this means the replica has those tables. When running
 	// on master this is always true, of course, and yet it also implies this knowledge
@@ -405,9 +402,9 @@ func (this *Migrator) Migrate() (err error) {
 	this.migrationContext.MarkRowCopyStartTime()
 	go this.initiateStatus()
 
-	this.migrationContext.Log.Debug("Operating until row copy is complete")
+	this.migrationContext.Log.Debugf("Operating until row copy is complete")
 	this.consumeRowCopyComplete()
-	this.migrationContext.Log.Info("Row copy complete")
+	this.migrationContext.Log.Infof("Row copy complete")
 	if err := this.hooksExecutor.onRowCopyComplete(); err != nil {
 		return err
 	}
@@ -433,7 +430,7 @@ func (this *Migrator) Migrate() (err error) {
 	if err := this.hooksExecutor.onSuccess(); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Sugar().Infof("Done migrating %s.%s", sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.OriginalTableName))
+	this.migrationContext.Log.Infof("Done migrating %s.%s", sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.OriginalTableName))
 	return nil
 }
 
@@ -459,16 +456,14 @@ func (this *Migrator) handleCutOverResult(cutOverError error) (err error) {
 		// and swap the tables.
 		// The difference is that we will later swap the tables back.
 		if err := this.hooksExecutor.onStartReplication(); err != nil {
-			this.migrationContext.Log.Error(err.Error())
-			return err
+			return this.migrationContext.Log.Errore(err)
 		}
 		if this.migrationContext.TestOnReplicaSkipReplicaStop {
-			this.migrationContext.Log.Warn("--test-on-replica-skip-replica-stop enabled, we are not starting replication.")
+			this.migrationContext.Log.Warningf("--test-on-replica-skip-replica-stop enabled, we are not starting replication.")
 		} else {
-			this.migrationContext.Log.Debug("testing on replica. Starting replication IO thread after cut-over failure")
+			this.migrationContext.Log.Debugf("testing on replica. Starting replication IO thread after cut-over failure")
 			if err := this.retryOperation(this.applier.StartReplication); err != nil {
-				this.migrationContext.Log.Error(err.Error())
-				return err
+				return this.migrationContext.Log.Errore(err)
 			}
 		}
 	}
@@ -479,23 +474,23 @@ func (this *Migrator) handleCutOverResult(cutOverError error) (err error) {
 // type (on replica? atomic? safe?)
 func (this *Migrator) cutOver() (err error) {
 	if this.migrationContext.Noop {
-		this.migrationContext.Log.Debug("Noop operation; not really swapping tables")
+		this.migrationContext.Log.Debugf("Noop operation; not really swapping tables")
 		return nil
 	}
 	this.migrationContext.MarkPointOfInterest()
 	this.throttler.throttle(func() {
-		this.migrationContext.Log.Debug("throttling before swapping tables")
+		this.migrationContext.Log.Debugf("throttling before swapping tables")
 	})
 
 	this.migrationContext.MarkPointOfInterest()
-	this.migrationContext.Log.Debug("checking for cut-over postpone")
+	this.migrationContext.Log.Debugf("checking for cut-over postpone")
 	this.sleepWhileTrue(
 		func() (bool, error) {
 			heartbeatLag := this.migrationContext.TimeSinceLastHeartbeatOnChangelog()
 			maxLagMillisecondsThrottle := time.Duration(atomic.LoadInt64(&this.migrationContext.MaxLagMillisecondsThrottleThreshold)) * time.Millisecond
 			cutOverLockTimeout := time.Duration(this.migrationContext.CutOverLockTimeoutSeconds) * time.Second
 			if heartbeatLag > maxLagMillisecondsThrottle || heartbeatLag > cutOverLockTimeout {
-				this.migrationContext.Log.Sugar().Debugf("current HeartbeatLag (%.2fs) is too high, it needs to be less than both --max-lag-millis (%.2fs) and --cut-over-lock-timeout-seconds (%.2fs) to continue", heartbeatLag.Seconds(), maxLagMillisecondsThrottle.Seconds(), cutOverLockTimeout.Seconds())
+				this.migrationContext.Log.Debugf("current HeartbeatLag (%.2fs) is too high, it needs to be less than both --max-lag-millis (%.2fs) and --cut-over-lock-timeout-seconds (%.2fs) to continue", heartbeatLag.Seconds(), maxLagMillisecondsThrottle.Seconds(), cutOverLockTimeout.Seconds())
 				return true, nil
 			}
 			if this.migrationContext.PostponeCutOverFlagFile == "" {
@@ -520,7 +515,7 @@ func (this *Migrator) cutOver() (err error) {
 	)
 	atomic.StoreInt64(&this.migrationContext.IsPostponingCutOver, 0)
 	this.migrationContext.MarkPointOfInterest()
-	this.migrationContext.Log.Debug("checking for cut-over postpone: complete")
+	this.migrationContext.Log.Debugf("checking for cut-over postpone: complete")
 
 	if this.migrationContext.TestOnReplica {
 		// With `--test-on-replica` we stop replication thread, and then proceed to use
@@ -531,9 +526,9 @@ func (this *Migrator) cutOver() (err error) {
 			return err
 		}
 		if this.migrationContext.TestOnReplicaSkipReplicaStop {
-			this.migrationContext.Log.Warn("--test-on-replica-skip-replica-stop enabled, we are not stopping replication.")
+			this.migrationContext.Log.Warningf("--test-on-replica-skip-replica-stop enabled, we are not stopping replication.")
 		} else {
-			this.migrationContext.Log.Debug("testing on replica. Stopping replication IO thread")
+			this.migrationContext.Log.Debugf("testing on replica. Stopping replication IO thread")
 			if err := this.retryOperation(this.applier.StopReplication); err != nil {
 				return err
 			}
@@ -551,9 +546,7 @@ func (this *Migrator) cutOver() (err error) {
 		this.handleCutOverResult(err)
 		return err
 	}
-	err = fmt.Errorf("Unknown cut-over type: %d; should never get here!", this.migrationContext.CutOverType)
-	this.migrationContext.Log.Panic(err.Error())
-	return err
+	return this.migrationContext.Log.Fatalf("Unknown cut-over type: %d; should never get here!", this.migrationContext.CutOverType)
 }
 
 // Inject the "AllEventsUpToLockProcessed" state hint, wait for it to appear in the binary logs,
@@ -565,34 +558,32 @@ func (this *Migrator) waitForEventsUpToLock() (err error) {
 	waitForEventsUpToLockStartTime := time.Now()
 
 	allEventsUpToLockProcessedChallenge := fmt.Sprintf("%s:%d", string(AllEventsUpToLockProcessed), waitForEventsUpToLockStartTime.UnixNano())
-	this.migrationContext.Log.Sugar().Infof("Writing changelog state: %+v", allEventsUpToLockProcessedChallenge)
+	this.migrationContext.Log.Infof("Writing changelog state: %+v", allEventsUpToLockProcessedChallenge)
 	if _, err := this.applier.WriteChangelogState(allEventsUpToLockProcessedChallenge); err != nil {
 		return err
 	}
-	this.migrationContext.Log.Info("Waiting for events up to lock")
+	this.migrationContext.Log.Infof("Waiting for events up to lock")
 	atomic.StoreInt64(&this.migrationContext.AllEventsUpToLockProcessedInjectedFlag, 1)
 	for found := false; !found; {
 		select {
 		case <-timeout.C:
 			{
-				err := fmt.Errorf("Timeout while waiting for events up to lock")
-				this.migrationContext.Log.Error(err.Error())
-				return err
+				return this.migrationContext.Log.Errorf("Timeout while waiting for events up to lock")
 			}
 		case state := <-this.allEventsUpToLockProcessed:
 			{
 				if state == allEventsUpToLockProcessedChallenge {
-					this.migrationContext.Log.Sugar().Infof("Waiting for events up to lock: got %s", state)
+					this.migrationContext.Log.Infof("Waiting for events up to lock: got %s", state)
 					found = true
 				} else {
-					this.migrationContext.Log.Sugar().Infof("Waiting for events up to lock: skipping %s", state)
+					this.migrationContext.Log.Infof("Waiting for events up to lock: skipping %s", state)
 				}
 			}
 		}
 	}
 	waitForEventsUpToLockDuration := time.Since(waitForEventsUpToLockStartTime)
 
-	this.migrationContext.Log.Sugar().Infof("Done waiting for events up to lock; duration=%+v", waitForEventsUpToLockDuration)
+	this.migrationContext.Log.Infof("Done waiting for events up to lock; duration=%+v", waitForEventsUpToLockDuration)
 	this.printStatus(ForcePrintStatusAndHintRule)
 
 	return nil
@@ -623,7 +614,7 @@ func (this *Migrator) cutOverTwoStep() (err error) {
 
 	lockAndRenameDuration := this.migrationContext.RenameTablesEndTime.Sub(this.migrationContext.LockTablesStartTime)
 	renameDuration := this.migrationContext.RenameTablesEndTime.Sub(this.migrationContext.RenameTablesStartTime)
-	this.migrationContext.Log.Sugar().Debugf("Lock & rename duration: %s (rename only: %s). During this time, queries on %s were locked or failing", lockAndRenameDuration, renameDuration, sql.EscapeName(this.migrationContext.OriginalTableName))
+	this.migrationContext.Log.Debugf("Lock & rename duration: %s (rename only: %s). During this time, queries on %s were locked or failing", lockAndRenameDuration, renameDuration, sql.EscapeName(this.migrationContext.OriginalTableName))
 	return nil
 }
 
@@ -648,20 +639,18 @@ func (this *Migrator) atomicCutOver() (err error) {
 	tableUnlocked := make(chan error, 2)
 	go func() {
 		if err := this.applier.AtomicCutOverMagicLock(lockOriginalSessionIdChan, tableLocked, okToUnlockTable, tableUnlocked, &dropCutOverSentryTableOnce); err != nil {
-			this.migrationContext.Log.Error(err.Error())
+			this.migrationContext.Log.Errore(err)
 		}
 	}()
 	if err := <-tableLocked; err != nil {
-		this.migrationContext.Log.Error(err.Error())
-		return err
+		return this.migrationContext.Log.Errore(err)
 	}
 	lockOriginalSessionId := <-lockOriginalSessionIdChan
-	this.migrationContext.Log.Sugar().Infof("Session locking original & magic tables is %+v", lockOriginalSessionId)
+	this.migrationContext.Log.Infof("Session locking original & magic tables is %+v", lockOriginalSessionId)
 	// At this point we know the original table is locked.
 	// We know any newly incoming DML on original table is blocked.
 	if err := this.waitForEventsUpToLock(); err != nil {
-		this.migrationContext.Log.Error(err.Error())
-		return err
+		return this.migrationContext.Log.Errore(err)
 	}
 
 	// Step 2
@@ -679,7 +668,7 @@ func (this *Migrator) atomicCutOver() (err error) {
 		}
 	}()
 	renameSessionId := <-renameSessionIdChan
-	this.migrationContext.Log.Sugar().Infof("Session renaming tables is %+v", renameSessionId)
+	this.migrationContext.Log.Infof("Session renaming tables is %+v", renameSessionId)
 
 	waitForRename := func() error {
 		if atomic.LoadInt64(&tableRenameKnownToHaveFailed) == 1 {
@@ -696,14 +685,13 @@ func (this *Migrator) atomicCutOver() (err error) {
 		return err
 	}
 	if atomic.LoadInt64(&tableRenameKnownToHaveFailed) == 0 {
-		this.migrationContext.Log.Info("Found atomic RENAME to be blocking, as expected. Double checking the lock is still in place (though I don't strictly have to)")
+		this.migrationContext.Log.Infof("Found atomic RENAME to be blocking, as expected. Double checking the lock is still in place (though I don't strictly have to)")
 	}
 	if err := this.applier.ExpectUsedLock(lockOriginalSessionId); err != nil {
 		// Abort operation. Just make sure to drop the magic table.
-		this.migrationContext.Log.Error(err.Error())
-		return err
+		return this.migrationContext.Log.Errore(err)
 	}
-	this.migrationContext.Log.Info("Connection holding lock on original table still exists")
+	this.migrationContext.Log.Infof("Connection holding lock on original table still exists")
 
 	// Now that we've found the RENAME blocking, AND the locking connection still alive,
 	// we know it is safe to proceed to release the lock
@@ -712,18 +700,16 @@ func (this *Migrator) atomicCutOver() (err error) {
 	// BAM! magic table dropped, original table lock is released
 	// -> RENAME released -> queries on original are unblocked.
 	if err := <-tableUnlocked; err != nil {
-		this.migrationContext.Log.Error(err.Error())
-		return err
+		return this.migrationContext.Log.Errore(err)
 	}
 	if err := <-tablesRenamed; err != nil {
-		this.migrationContext.Log.Error(err.Error())
-		return err
+		return this.migrationContext.Log.Errore(err)
 	}
 	this.migrationContext.RenameTablesEndTime = time.Now()
 
 	// ooh nice! We're actually truly and thankfully done
 	lockAndRenameDuration := this.migrationContext.RenameTablesEndTime.Sub(this.migrationContext.LockTablesStartTime)
-	this.migrationContext.Log.Sugar().Infof("Lock & rename duration: %s. During this time, queries on %s were blocked", lockAndRenameDuration, sql.EscapeName(this.migrationContext.OriginalTableName))
+	this.migrationContext.Log.Infof("Lock & rename duration: %s. During this time, queries on %s were blocked", lockAndRenameDuration, sql.EscapeName(this.migrationContext.OriginalTableName))
 	return nil
 }
 
@@ -769,7 +755,7 @@ func (this *Migrator) initiateInspector() (err error) {
 		if this.migrationContext.ApplierConnectionConfig, err = this.inspector.getMasterConnectionConfig(); err != nil {
 			return err
 		}
-		this.migrationContext.Log.Sugar().Infof("Master found to be %+v", *this.migrationContext.ApplierConnectionConfig.ImpliedKey)
+		this.migrationContext.Log.Infof("Master found to be %+v", *this.migrationContext.ApplierConnectionConfig.ImpliedKey)
 	} else {
 		// Forced master host.
 		key, err := mysql.ParseInstanceKey(this.migrationContext.AssumeMasterHostname)
@@ -783,14 +769,14 @@ func (this *Migrator) initiateInspector() (err error) {
 		if this.migrationContext.CliMasterPassword != "" {
 			this.migrationContext.ApplierConnectionConfig.Password = this.migrationContext.CliMasterPassword
 		}
-		this.migrationContext.Log.Sugar().Infof("Master forced to be %+v", *this.migrationContext.ApplierConnectionConfig.ImpliedKey)
+		this.migrationContext.Log.Infof("Master forced to be %+v", *this.migrationContext.ApplierConnectionConfig.ImpliedKey)
 	}
 	// validate configs
 	if this.migrationContext.TestOnReplica || this.migrationContext.MigrateOnReplica {
 		if this.migrationContext.InspectorIsAlsoApplier() {
 			return fmt.Errorf("Instructed to --test-on-replica or --migrate-on-replica, but the server we connect to doesn't seem to be a replica")
 		}
-		this.migrationContext.Log.Sugar().Infof("--test-on-replica or --migrate-on-replica given. Will not execute on master %+v but rather on replica %+v itself",
+		this.migrationContext.Log.Infof("--test-on-replica or --migrate-on-replica given. Will not execute on master %+v but rather on replica %+v itself",
 			*this.migrationContext.ApplierConnectionConfig.ImpliedKey, *this.migrationContext.InspectorConnectionConfig.ImpliedKey,
 		)
 		this.migrationContext.ApplierConnectionConfig = this.migrationContext.InspectorConnectionConfig.Duplicate()
@@ -1041,12 +1027,12 @@ func (this *Migrator) initiateStreaming() error {
 	)
 
 	go func() {
-		this.migrationContext.Log.Debug("Beginning streaming")
+		this.migrationContext.Log.Debugf("Beginning streaming")
 		err := this.eventsStreamer.StreamEvents(this.canStopStreaming)
 		if err != nil {
 			this.migrationContext.PanicAbort <- err
 		}
-		this.migrationContext.Log.Debug("Done streaming")
+		this.migrationContext.Log.Debugf("Done streaming")
 	}()
 
 	go func() {
@@ -1081,11 +1067,11 @@ func (this *Migrator) initiateThrottler() error {
 	this.throttler = NewThrottler(this.migrationContext, this.applier, this.inspector)
 
 	go this.throttler.initiateThrottlerCollection(this.firstThrottlingCollected)
-	this.migrationContext.Log.Info("Waiting for first throttle metrics to be collected")
+	this.migrationContext.Log.Infof("Waiting for first throttle metrics to be collected")
 	<-this.firstThrottlingCollected // replication lag
 	<-this.firstThrottlingCollected // HTTP status
 	<-this.firstThrottlingCollected // other, general metrics
-	this.migrationContext.Log.Info("First throttle metrics collected")
+	this.migrationContext.Log.Infof("First throttle metrics collected")
 	go this.throttler.initiateThrottlerChecks()
 
 	return nil
@@ -1100,16 +1086,16 @@ func (this *Migrator) initiateApplier() error {
 		return err
 	}
 	if err := this.applier.CreateChangelogTable(); err != nil {
-		this.migrationContext.Log.Error("Unable to create changelog table, see further error details. Perhaps a previous migration failed without dropping the table? OR is there a running migration? Bailing out")
+		this.migrationContext.Log.Errorf("Unable to create changelog table, see further error details. Perhaps a previous migration failed without dropping the table? OR is there a running migration? Bailing out")
 		return err
 	}
 	if err := this.applier.CreateGhostTable(); err != nil {
-		this.migrationContext.Log.Error("Unable to create ghost table, see further error details. Perhaps a previous migration failed without dropping the table? Bailing out")
+		this.migrationContext.Log.Errorf("Unable to create ghost table, see further error details. Perhaps a previous migration failed without dropping the table? Bailing out")
 		return err
 	}
 
 	if err := this.applier.AlterGhost(); err != nil {
-		this.migrationContext.Log.Error("Unable to ALTER ghost table, see further error details. Bailing out")
+		this.migrationContext.Log.Errorf("Unable to ALTER ghost table, see further error details. Bailing out")
 		return err
 	}
 
@@ -1117,7 +1103,7 @@ func (this *Migrator) initiateApplier() error {
 		// Original table has AUTO_INCREMENT value and the -alter statement does not indicate any override,
 		// so we should copy AUTO_INCREMENT value onto our ghost table.
 		if err := this.applier.AlterGhostAutoIncrement(); err != nil {
-			this.migrationContext.Log.Error("Unable to ALTER ghost table AUTO_INCREMENT value, see further error details. Bailing out")
+			this.migrationContext.Log.Errorf("Unable to ALTER ghost table AUTO_INCREMENT value, see further error details. Bailing out")
 			return err
 		}
 	}
@@ -1131,15 +1117,14 @@ func (this *Migrator) initiateApplier() error {
 func (this *Migrator) iterateChunks() error {
 	terminateRowIteration := func(err error) error {
 		this.rowCopyComplete <- err
-		this.migrationContext.Log.Error(err.Error())
-		return err
+		return this.migrationContext.Log.Errore(err)
 	}
 	if this.migrationContext.Noop {
-		this.migrationContext.Log.Debug("Noop operation; not really copying data")
+		this.migrationContext.Log.Debugf("Noop operation; not really copying data")
 		return terminateRowIteration(nil)
 	}
 	if this.migrationContext.MigrationRangeMinValues == nil {
-		this.migrationContext.Log.Debug("No rows found in table. Rowcopy will be implicitly empty")
+		this.migrationContext.Log.Debugf("No rows found in table. Rowcopy will be implicitly empty")
 		return terminateRowIteration(nil)
 	}
 
@@ -1206,8 +1191,7 @@ func (this *Migrator) onApplyEventStruct(eventStruct *applyEventStruct) error {
 	handleNonDMLEventStruct := func(eventStruct *applyEventStruct) error {
 		if eventStruct.writeFunc != nil {
 			if err := this.retryOperation(*eventStruct.writeFunc); err != nil {
-				this.migrationContext.Log.Error(err.Error())
-				return err
+				return this.migrationContext.Log.Errore(err)
 			}
 		}
 		return nil
@@ -1241,15 +1225,13 @@ func (this *Migrator) onApplyEventStruct(eventStruct *applyEventStruct) error {
 			return this.applier.ApplyDMLEventQueries(dmlEvents)
 		}
 		if err := this.retryOperation(applyEventFunc); err != nil {
-			this.migrationContext.Log.Error(err.Error())
-			return err
+			return this.migrationContext.Log.Errore(err)
 		}
 		if nonDmlStructToApply != nil {
 			// We pulled DML events from the queue, and then we hit a non-DML event. Wait!
 			// We need to handle it!
 			if err := handleNonDMLEventStruct(nonDmlStructToApply); err != nil {
-				this.migrationContext.Log.Error(err.Error())
-				return err
+				return this.migrationContext.Log.Errore(err)
 			}
 		}
 	}
@@ -1261,7 +1243,7 @@ func (this *Migrator) onApplyEventStruct(eventStruct *applyEventStruct) error {
 // Both event backlog and rowcopy events are polled; the backlog events have precedence.
 func (this *Migrator) executeWriteFuncs() error {
 	if this.migrationContext.Noop {
-		this.migrationContext.Log.Debug("Noop operation; not really executing write funcs")
+		this.migrationContext.Log.Debugf("Noop operation; not really executing write funcs")
 		return nil
 	}
 	for {
@@ -1288,8 +1270,7 @@ func (this *Migrator) executeWriteFuncs() error {
 						copyRowsStartTime := time.Now()
 						// Retries are handled within the copyRowsFunc
 						if err := copyRowsFunc(); err != nil {
-							this.migrationContext.Log.Error(err.Error())
-							return err
+							return this.migrationContext.Log.Errore(err)
 						}
 						if niceRatio := this.migrationContext.GetNiceRatio(); niceRatio > 0 {
 							copyRowsDuration := time.Since(copyRowsStartTime)
@@ -1302,7 +1283,7 @@ func (this *Migrator) executeWriteFuncs() error {
 					{
 						// Hmmmmm... nothing in the queue; no events, but also no row copy.
 						// This is possible upon load. Let's just sleep it over.
-						this.migrationContext.Log.Debug("Getting nothing in the write queue. Sleeping...")
+						this.migrationContext.Log.Debugf("Getting nothing in the write queue. Sleeping...")
 						time.Sleep(time.Second)
 					}
 				}
@@ -1317,14 +1298,14 @@ func (this *Migrator) finalCleanup() error {
 
 	if this.migrationContext.Noop {
 		if createTableStatement, err := this.inspector.showCreateTable(this.migrationContext.GetGhostTableName()); err == nil {
-			this.migrationContext.Log.Info("New table structure follows")
+			this.migrationContext.Log.Infof("New table structure follows")
 			fmt.Println(createTableStatement)
 		} else {
-			this.migrationContext.Log.Error(err.Error())
+			this.migrationContext.Log.Errore(err)
 		}
 	}
 	if err := this.eventsStreamer.Close(); err != nil {
-		this.migrationContext.Log.Error(err.Error())
+		this.migrationContext.Log.Errore(err)
 	}
 
 	if err := this.retryOperation(this.applier.DropChangelogTable); err != nil {
@@ -1336,8 +1317,8 @@ func (this *Migrator) finalCleanup() error {
 		}
 	} else {
 		if !this.migrationContext.Noop {
-			this.migrationContext.Log.Info("Am not dropping old table because I want this operation to be as live as possible. If you insist I should do it, please add `--ok-to-drop-table` next time. But I prefer you do not. To drop the old table, issue:")
-			this.migrationContext.Log.Sugar().Infof("-- drop table %s.%s", sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.GetOldTableName()))
+			this.migrationContext.Log.Infof("Am not dropping old table because I want this operation to be as live as possible. If you insist I should do it, please add `--ok-to-drop-table` next time. But I prefer you do not. To drop the old table, issue:")
+			this.migrationContext.Log.Infof("-- drop table %s.%s", sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.GetOldTableName()))
 		}
 	}
 	if this.migrationContext.Noop {
@@ -1353,22 +1334,22 @@ func (this *Migrator) teardown() {
 	atomic.StoreInt64(&this.finishedMigrating, 1)
 
 	if this.inspector != nil {
-		this.migrationContext.Log.Info("Tearing down inspector")
+		this.migrationContext.Log.Infof("Tearing down inspector")
 		this.inspector.Teardown()
 	}
 
 	if this.applier != nil {
-		this.migrationContext.Log.Info("Tearing down applier")
+		this.migrationContext.Log.Infof("Tearing down applier")
 		this.applier.Teardown()
 	}
 
 	if this.eventsStreamer != nil {
-		this.migrationContext.Log.Info("Tearing down streamer")
+		this.migrationContext.Log.Infof("Tearing down streamer")
 		this.eventsStreamer.Teardown()
 	}
 
 	if this.throttler != nil {
-		this.migrationContext.Log.Info("Tearing down throttler")
+		this.migrationContext.Log.Infof("Tearing down throttler")
 		this.throttler.Teardown()
 	}
 }
