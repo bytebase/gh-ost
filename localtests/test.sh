@@ -256,7 +256,7 @@ test_all() {
   find $tests_path ! -path . -type d -mindepth 1 -maxdepth 1 | cut -d "/" -f 3 | egrep "$test_pattern" | while read test_name ; do
     test_single "$test_name"
     if [ $? -ne 0 ] ; then
-      create_statement=$(gh-ost-test-mysql-replica test -t -e "show create table ~gh_ost_test_gho \G")
+      create_statement=$(gh-ost-test-mysql-replica test -t -e "show create table `~gh_ost_test_gho` \G")
       echo "$create_statement" >> $test_logfile
       echo "+ FAIL"
       return 1
