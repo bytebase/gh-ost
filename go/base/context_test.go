@@ -51,6 +51,14 @@ func TestGetTableNames(t *testing.T) {
 	}
 	{
 		context := NewMigrationContext()
+		context.OriginalTableName = "a123456789012345678901234567890123456789012345678901234567890123"
+		context.TimestampAllTable = true
+		longForm := "Jan 2, 2006 at 3:04pm (MST)"
+		context.StartTime, _ = time.Parse(longForm, "Feb 3, 2013 at 7:54pm (PST)")
+		test.S(t).ExpectEquals(context.GetGhostTableName(), "~a1234567890123456789012345678901234567890123_20130203195400_gho")
+	}
+	{
+		context := NewMigrationContext()
 		context.OriginalTableName = "foo_bar_baz"
 		context.ForceTmpTableName = "tmp"
 		test.S(t).ExpectEquals(context.GetOldTableName(), "~tmp_del")
