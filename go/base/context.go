@@ -154,6 +154,7 @@ type MigrationContext struct {
 	InitiallyDropOldTable        bool
 	InitiallyDropGhostTable      bool
 	TimestampOldTable            bool // Should old table name include a timestamp
+	TimestampAllTable            bool // Should all table names include a timestamp
 	CutOverType                  CutOver
 	ReplicaServerId              uint
 
@@ -285,51 +286,62 @@ func NewMigrationContext() *MigrationContext {
 }
 
 func getSafeTableName(baseName string, suffix string) string {
-	name := fmt.Sprintf("_%s_%s", baseName, suffix)
+	name := fmt.Sprintf("~%s_%s", baseName, suffix)
 	if len(name) <= mysql.MaxTableNameLength {
 		return name
 	}
 	extraCharacters := len(name) - mysql.MaxTableNameLength
-	return fmt.Sprintf("_%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
+	return fmt.Sprintf("~%s_%s", baseName[0:len(baseName)-extraCharacters], suffix)
 }
 
 // GetGhostTableName generates the name of ghost table, based on original table name
 // or a given table name
 func (this *MigrationContext) GetGhostTableName() string {
-	if this.ForceTmpTableName != "" {
-		return getSafeTableName(this.ForceTmpTableName, "gho")
-	} else {
-		return getSafeTableName(this.OriginalTableName, "gho")
-	}
-}
-
-// GetOldTableName generates the name of the "old" table, into which the original table is renamed.
-func (this *MigrationContext) GetOldTableName() string {
-	var tableName string
+	var tableName, suffix string
 	if this.ForceTmpTableName != "" {
 		tableName = this.ForceTmpTableName
 	} else {
 		tableName = this.OriginalTableName
 	}
-
-	if this.TimestampOldTable {
-		t := this.StartTime
-		timestamp := fmt.Sprintf("%d%02d%02d%02d%02d%02d",
-			t.Year(), t.Month(), t.Day(),
-			t.Hour(), t.Minute(), t.Second())
-		return getSafeTableName(tableName, fmt.Sprintf("%s_del", timestamp))
+	if this.TimestampAllTable {
+		suffix = fmt.Sprintf("%v_gho", this.StartTime.Unix())
+	} else {
+		suffix = "gho"
 	}
-	return getSafeTableName(tableName, "del")
+	return getSafeTableName(tableName, suffix)
+}
+
+// GetOldTableName generates the name of the "old" table, into which the original table is renamed.
+func (this *MigrationContext) GetOldTableName() string {
+	var tableName, suffix string
+	if this.ForceTmpTableName != "" {
+		tableName = this.ForceTmpTableName
+	} else {
+		tableName = this.OriginalTableName
+	}
+	if this.TimestampOldTable || this.TimestampAllTable {
+		suffix = fmt.Sprintf("%v_del", this.StartTime.Unix())
+	} else {
+		suffix = "del"
+	}
+	return getSafeTableName(tableName, suffix)
 }
 
 // GetChangelogTableName generates the name of changelog table, based on original table name
 // or a given table name.
 func (this *MigrationContext) GetChangelogTableName() string {
+	var tableName, suffix string
 	if this.ForceTmpTableName != "" {
-		return getSafeTableName(this.ForceTmpTableName, "ghc")
+		tableName = this.ForceTmpTableName
 	} else {
-		return getSafeTableName(this.OriginalTableName, "ghc")
+		tableName = this.OriginalTableName
 	}
+	if this.TimestampAllTable {
+		suffix = fmt.Sprintf("%v_ghc", this.StartTime.Unix())
+	} else {
+		suffix = "ghc"
+	}
+	return getSafeTableName(tableName, suffix)
 }
 
 // GetVoluntaryLockName returns a name of a voluntary lock to be used throughout
