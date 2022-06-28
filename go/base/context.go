@@ -304,7 +304,7 @@ func (this *MigrationContext) GetGhostTableName() string {
 		tableName = this.OriginalTableName
 	}
 	if this.TimestampAllTable {
-		suffix = fmt.Sprintf("%s_gho", timeToTimestamp(this.StartTime))
+		suffix = fmt.Sprintf("%v_gho", this.StartTime.Unix())
 	} else {
 		suffix = "gho"
 	}
@@ -320,7 +320,7 @@ func (this *MigrationContext) GetOldTableName() string {
 		tableName = this.OriginalTableName
 	}
 	if this.TimestampOldTable || this.TimestampAllTable {
-		suffix = fmt.Sprintf("%s_del", timeToTimestamp(this.StartTime))
+		suffix = fmt.Sprintf("%v_del", this.StartTime.Unix())
 	} else {
 		suffix = "del"
 	}
@@ -337,7 +337,7 @@ func (this *MigrationContext) GetChangelogTableName() string {
 		tableName = this.OriginalTableName
 	}
 	if this.TimestampAllTable {
-		suffix = fmt.Sprintf("%s_ghc", timeToTimestamp(this.StartTime))
+		suffix = fmt.Sprintf("%v_ghc", this.StartTime.Unix())
 	} else {
 		suffix = "ghc"
 	}
