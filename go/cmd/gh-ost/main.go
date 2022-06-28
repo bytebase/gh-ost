@@ -17,6 +17,7 @@ import (
 	"github.com/github/gh-ost/go/logic"
 	"github.com/github/gh-ost/go/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/openark/golib/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -36,7 +37,7 @@ func acceptSignals(migrationContext *base.MigrationContext) {
 			case syscall.SIGHUP:
 				migrationContext.Log.Info("Received SIGHUP. Reloading configuration")
 				if err := migrationContext.ReadConfigFile(); err != nil {
-					migrationContext.Log.Error(err.Error())
+					log.Errore(err)
 				} else {
 					migrationContext.MarkPointOfInterest()
 				}
