@@ -48,12 +48,12 @@ func (this *Server) BindSocketFile() (err error) {
 	if err != nil {
 		return err
 	}
-	this.migrationContext.Log.Sugar().Infof("Listening on unix socket file: %s", this.migrationContext.ServeSocketFile)
+	this.migrationContext.Log.Infof("Listening on unix socket file: %s", this.migrationContext.ServeSocketFile)
 	return nil
 }
 
 func (this *Server) RemoveSocketFile() (err error) {
-	this.migrationContext.Log.Sugar().Infof("Removing socket file: %s", this.migrationContext.ServeSocketFile)
+	this.migrationContext.Log.Infof("Removing socket file: %s", this.migrationContext.ServeSocketFile)
 	return os.Remove(this.migrationContext.ServeSocketFile)
 }
 
@@ -65,7 +65,7 @@ func (this *Server) BindTCPPort() (err error) {
 	if err != nil {
 		return err
 	}
-	this.migrationContext.Log.Sugar().Infof("Listening on tcp port: %d", this.migrationContext.ServeTCPPort)
+	this.migrationContext.Log.Infof("Listening on tcp port: %d", this.migrationContext.ServeTCPPort)
 	return nil
 }
 
@@ -75,7 +75,7 @@ func (this *Server) Serve() (err error) {
 		for {
 			conn, err := this.unixListener.Accept()
 			if err != nil {
-				this.migrationContext.Log.Error(err.Error())
+				this.migrationContext.Log.Errore(err)
 			}
 			go this.handleConnection(conn)
 		}
@@ -87,7 +87,7 @@ func (this *Server) Serve() (err error) {
 		for {
 			conn, err := this.tcpListener.Accept()
 			if err != nil {
-				this.migrationContext.Log.Error(err.Error())
+				this.migrationContext.Log.Errore(err)
 			}
 			go this.handleConnection(conn)
 		}
@@ -117,8 +117,7 @@ func (this *Server) onServerCommand(command string, writer *bufio.Writer) (err e
 	} else {
 		fmt.Fprintf(writer, "%s\n", err.Error())
 	}
-	this.migrationContext.Log.Error(err.Error())
-	return err
+	return this.migrationContext.Log.Errore(err)
 }
 
 // applyServerCommand parses and executes commands by user

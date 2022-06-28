@@ -6,7 +6,6 @@
 package binlog
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
@@ -59,12 +58,11 @@ func NewGoMySQLReader(migrationContext *base.MigrationContext) (binlogReader *Go
 // ConnectBinlogStreamer
 func (this *GoMySQLReader) ConnectBinlogStreamer(coordinates mysql.BinlogCoordinates) (err error) {
 	if coordinates.IsEmpty() {
-		this.migrationContext.Log.Error("Empty coordinates at ConnectBinlogStreamer()")
-		return errors.New("Empty coordinates at ConnectBinlogStreamer()")
+		return this.migrationContext.Log.Errorf("Empty coordinates at ConnectBinlogStreamer()")
 	}
 
 	this.currentCoordinates = coordinates
-	this.migrationContext.Log.Sugar().Infof("Connecting binlog streamer at %+v", this.currentCoordinates)
+	this.migrationContext.Log.Infof("Connecting binlog streamer at %+v", this.currentCoordinates)
 	// Start sync with specified binlog file and position
 	this.binlogStreamer, err = this.binlogSyncer.StartSync(gomysql.Position{
 		Name: this.currentCoordinates.LogFile,
@@ -84,13 +82,13 @@ func (this *GoMySQLReader) GetCurrentBinlogCoordinates() *mysql.BinlogCoordinate
 // StreamEvents
 func (this *GoMySQLReader) handleRowsEvent(ev *replication.BinlogEvent, rowsEvent *replication.RowsEvent, entriesChannel chan<- *BinlogEntry) error {
 	if this.currentCoordinates.SmallerThanOrEquals(&this.LastAppliedRowsEventHint) {
-		this.migrationContext.Log.Sugar().Debugf("Skipping handled query at %+v", this.currentCoordinates)
+		this.migrationContext.Log.Debugf("Skipping handled query at %+v", this.currentCoordinates)
 		return nil
 	}
 
 	dml := ToEventDML(ev.Header.EventType.String())
 	if dml == NotDML {
-		return fmt.Errorf("unknown DML type: %s", ev.Header.EventType.String())
+		return fmt.Errorf("Unknown DML type: %s", ev.Header.EventType.String())
 	}
 	for i, row := range rowsEvent.Rows {
 		if dml == UpdateDML && i%2 == 1 {
@@ -153,14 +151,14 @@ func (this *GoMySQLReader) StreamEvents(canStopStreaming func() bool, entriesCha
 				defer this.currentCoordinatesMutex.Unlock()
 				this.currentCoordinates.LogFile = string(rotateEvent.NextLogName)
 			}()
-			this.migrationContext.Log.Sugar().Infof("rotate to next log from %s:%d to %s", this.currentCoordinates.LogFile, int64(ev.Header.LogPos), rotateEvent.NextLogName)
+			this.migrationContext.Log.Infof("rotate to next log from %s:%d to %s", this.currentCoordinates.LogFile, int64(ev.Header.LogPos), rotateEvent.NextLogName)
 		} else if rowsEvent, ok := ev.Event.(*replication.RowsEvent); ok {
 			if err := this.handleRowsEvent(ev, rowsEvent, entriesChannel); err != nil {
 				return err
 			}
 		}
 	}
-	this.migrationContext.Log.Debug("done streaming events")
+	this.migrationContext.Log.Debugf("done streaming events")
 
 	return nil
 }
