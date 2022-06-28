@@ -47,7 +47,7 @@ func TestGetTableNames(t *testing.T) {
 		longForm := "Jan 2, 2006 at 3:04pm (MST)"
 		context.StartTime, _ = time.Parse(longForm, "Feb 3, 2013 at 7:54pm (PST)")
 		oldTableName := context.GetOldTableName()
-		test.S(t).ExpectEquals(oldTableName, "~a1234567890123456789012345678901234567890123_1359921240_del")
+		test.S(t).ExpectEquals(oldTableName, "~a12345678901234567890123456789012345678901234567_1359921240_del")
 	}
 	{
 		context := NewMigrationContext()
@@ -55,7 +55,7 @@ func TestGetTableNames(t *testing.T) {
 		context.TimestampAllTable = true
 		longForm := "Jan 2, 2006 at 3:04pm (MST)"
 		context.StartTime, _ = time.Parse(longForm, "Feb 3, 2013 at 7:54pm (PST)")
-		test.S(t).ExpectEquals(context.GetGhostTableName(), "~a1234567890123456789012345678901234567890123_1359921240_gho")
+		test.S(t).ExpectEquals(context.GetGhostTableName(), "~a12345678901234567890123456789012345678901234567_1359921240_gho")
 	}
 	{
 		context := NewMigrationContext()
