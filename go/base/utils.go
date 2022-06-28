@@ -21,6 +21,12 @@ var (
 	prettifyDurationRegexp = regexp.MustCompile("([.][0-9]+)")
 )
 
+func timeToTimestamp(t time.Time) string {
+	return fmt.Sprintf("%d%02d%02d%02d%02d%02d",
+		t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
+}
+
 func PrettifyDurationOutput(d time.Duration) string {
 	if d < time.Second {
 		return "0s"
