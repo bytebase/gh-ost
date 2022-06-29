@@ -35,7 +35,7 @@ func acceptSignals(migrationContext *base.MigrationContext) {
 			case syscall.SIGHUP:
 				migrationContext.Log.Info("Received SIGHUP. Reloading configuration")
 				if err := migrationContext.ReadConfigFile(); err != nil {
-					migrationContext.Log.Error(err.Error())
+					migrationContext.Log.Errore(err)
 				} else {
 					migrationContext.MarkPointOfInterest()
 				}
@@ -190,7 +190,7 @@ func main() {
 	}
 
 	if err := flag.Set("database", url.QueryEscape(migrationContext.DatabaseName)); err != nil {
-		migrationContext.Log.Fatal(err.Error())
+		migrationContext.Log.Fatale(err)
 	}
 
 	if migrationContext.OriginalTableName == "" {
@@ -250,16 +250,16 @@ func main() {
 		migrationContext.Log.Fatal("Unknown cut-over", zap.String("cutover", *cutOver))
 	}
 	if err := migrationContext.ReadConfigFile(); err != nil {
-		migrationContext.Log.Fatal(err.Error())
+		migrationContext.Log.Fatale(err)
 	}
 	if err := migrationContext.ReadThrottleControlReplicaKeys(*throttleControlReplicas); err != nil {
-		migrationContext.Log.Fatal(err.Error())
+		migrationContext.Log.Fatale(err)
 	}
 	if err := migrationContext.ReadMaxLoad(*maxLoad); err != nil {
-		migrationContext.Log.Fatal(err.Error())
+		migrationContext.Log.Fatale(err)
 	}
 	if err := migrationContext.ReadCriticalLoad(*criticalLoad); err != nil {
-		migrationContext.Log.Fatal(err.Error())
+		migrationContext.Log.Fatale(err)
 	}
 	if migrationContext.ServeSocketFile == "" {
 		migrationContext.ServeSocketFile = fmt.Sprintf("/tmp/gh-ost.%s.%s.sock", migrationContext.DatabaseName, migrationContext.OriginalTableName)
@@ -268,7 +268,7 @@ func main() {
 		fmt.Println("Password:")
 		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 		if err != nil {
-			migrationContext.Log.Fatal(err.Error())
+			migrationContext.Log.Fatale(err)
 		}
 		migrationContext.CliPassword = string(bytePassword)
 	}
@@ -283,13 +283,13 @@ func main() {
 	migrationContext.SetDefaultNumRetries(*defaultRetries)
 	migrationContext.ApplyCredentials()
 	if err := migrationContext.SetupTLS(); err != nil {
-		migrationContext.Log.Fatal(err.Error())
+		migrationContext.Log.Fatale(err)
 	}
 	if err := migrationContext.SetCutOverLockTimeoutSeconds(*cutOverLockTimeoutSeconds); err != nil {
-		migrationContext.Log.Error(err.Error())
+		migrationContext.Log.Errore(err)
 	}
 	if err := migrationContext.SetExponentialBackoffMaxInterval(*exponentialBackoffMaxInterval); err != nil {
-		migrationContext.Log.Error(err.Error())
+		migrationContext.Log.Errore(err)
 	}
 
 	migrationContext.Log.Infof("starting gh-ost %+v", AppVersion)
@@ -299,7 +299,7 @@ func main() {
 	err := migrator.Migrate()
 	if err != nil {
 		migrator.ExecOnFailureHook()
-		migrationContext.Log.Fatal(err.Error())
+		migrationContext.Log.Fatale(err)
 	}
 	fmt.Fprintf(os.Stdout, "# Done\n")
 }

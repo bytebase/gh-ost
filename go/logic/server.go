@@ -75,7 +75,7 @@ func (this *Server) Serve() (err error) {
 		for {
 			conn, err := this.unixListener.Accept()
 			if err != nil {
-				this.migrationContext.Log.Error(err.Error())
+				this.migrationContext.Log.Errore(err)
 			}
 			go this.handleConnection(conn)
 		}
@@ -87,7 +87,7 @@ func (this *Server) Serve() (err error) {
 		for {
 			conn, err := this.tcpListener.Accept()
 			if err != nil {
-				this.migrationContext.Log.Error(err.Error())
+				this.migrationContext.Log.Errore(err)
 			}
 			go this.handleConnection(conn)
 		}
@@ -116,7 +116,7 @@ func (this *Server) onServerCommand(command string, writer *bufio.Writer) (err e
 		this.printStatus(printStatusRule, writer)
 	} else {
 		fmt.Fprintf(writer, "%s\n", err.Error())
-		this.migrationContext.Log.Error(err.Error())
+		this.migrationContext.Log.Errore(err)
 	}
 	return err
 }

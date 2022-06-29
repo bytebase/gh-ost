@@ -83,7 +83,7 @@ func (this *HooksExecutor) executeHook(hook string, extraVariables ...string) er
 	combinedOutput, err := cmd.CombinedOutput()
 	fmt.Fprintln(os.Stderr, string(combinedOutput))
 	if err != nil {
-		this.migrationContext.Log.Error(err.Error())
+		this.migrationContext.Log.Errore(err)
 	}
 	return err
 }

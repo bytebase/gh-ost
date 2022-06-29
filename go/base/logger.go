@@ -68,6 +68,10 @@ func (l *Logger) Errorf(template string, args ...interface{}) {
 	l.Logger.Sugar().Errorf(template, args...)
 }
 
+func (l *Logger) Errore(err error) {
+	l.Logger.Error(err.Error())
+}
+
 func (l *Logger) Panic(msg string, fields ...zap.Field) {
 	l.Logger.Panic(msg, fields...)
 }
@@ -76,10 +80,17 @@ func (l *Logger) Panicf(template string, args ...interface{}) {
 	l.Logger.Sugar().Panicf(template, args...)
 }
 
+func (l *Logger) Panice(err error) {
+	l.Logger.Panic(err.Error())
+}
+
 func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	l.Logger.Fatal(msg, fields...)
 }
 
 func (l *Logger) Fatalf(template string, args ...interface{}) {
 	l.Logger.Sugar().Fatalf(template, args...)
+}
+func (l *Logger) Fatale(err error) {
+	l.Logger.Fatal(err.Error())
 }

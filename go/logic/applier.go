@@ -334,7 +334,7 @@ func (this *Applier) InitiateHeartbeat() {
 		if _, err := this.WriteChangelog("heartbeat", time.Now().Format(time.RFC3339Nano)); err != nil {
 			numSuccessiveFailures++
 			if numSuccessiveFailures > this.migrationContext.MaxRetries() {
-				this.migrationContext.Log.Error(err.Error())
+				this.migrationContext.Log.Errore(err)
 				return err
 			}
 		} else {
@@ -370,7 +370,7 @@ func (this *Applier) ExecuteThrottleQuery() (int64, error) {
 	}
 	var result int64
 	if err := this.db.QueryRow(throttleQuery).Scan(&result); err != nil {
-		this.migrationContext.Log.Error(err.Error())
+		this.migrationContext.Log.Errore(err)
 		return 0, err
 	}
 	return result, nil
@@ -893,7 +893,7 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 
 	dropCutOverSentryTableOnce.Do(func() {
 		if _, err := tx.Exec(query); err != nil {
-			this.migrationContext.Log.Error(err.Error())
+			this.migrationContext.Log.Errore(err)
 			// We DO NOT return here because we must `UNLOCK TABLES`!
 		}
 	})
@@ -908,7 +908,7 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 	query = `unlock tables`
 	if _, err := tx.Exec(query); err != nil {
 		tableUnlocked <- err
-		this.migrationContext.Log.Error(err.Error())
+		this.migrationContext.Log.Errore(err)
 		return err
 	}
 	this.migrationContext.Log.Info("Tables unlocked")
@@ -952,7 +952,7 @@ func (this *Applier) AtomicCutoverRename(sessionIdChan chan int64, tablesRenamed
 	this.migrationContext.Log.Infof("Issuing and expecting this to block: %s", query)
 	if _, err := tx.Exec(query); err != nil {
 		tablesRenamed <- err
-		this.migrationContext.Log.Error(err.Error())
+		this.migrationContext.Log.Errore(err)
 		return err
 	}
 	tablesRenamed <- nil
@@ -1071,7 +1071,7 @@ func (this *Applier) ApplyDMLEventQueries(dmlEvents [](*binlog.BinlogDMLEvent)) 
 	}()
 
 	if err != nil {
-		this.migrationContext.Log.Error(err.Error())
+		this.migrationContext.Log.Errore(err)
 		return err
 	}
 	// no error
