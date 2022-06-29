@@ -242,7 +242,6 @@ type ContextConfig struct {
 }
 
 func NewMigrationContext() *MigrationContext {
-
 	return &MigrationContext{
 		Uuid:                                uuid.NewV4().String(),
 		defaultNumRetries:                   60,
