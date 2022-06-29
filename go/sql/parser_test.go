@@ -9,13 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openark/golib/log"
 	test "github.com/openark/golib/tests"
 )
-
-func init() {
-	log.SetLevel(log.ERROR)
-}
 
 func TestParseAlterStatement(t *testing.T) {
 	statement := "add column t int, engine=innodb"

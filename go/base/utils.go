@@ -85,11 +85,11 @@ func ValidateConnection(db *gosql.DB, connectionConfig *mysql.ConnectionConfig, 
 	}
 
 	if connectionConfig.Key.Port == port || (extraPort > 0 && connectionConfig.Key.Port == extraPort) {
-		migrationContext.Log.Infof("%s connection validated on %+v", name, connectionConfig.Key)
+		migrationContext.Log.Sugar().Info("%s connection validated on %+v", name, connectionConfig.Key)
 		return version, nil
 	} else if extraPort == 0 {
-		return "", fmt.Errorf("Unexpected database port reported: %+v", port)
+		return "", fmt.Errorf("unexpected database port reported: %+v", port)
 	} else {
-		return "", fmt.Errorf("Unexpected database port reported: %+v / extra_port: %+v", port, extraPort)
+		return "", fmt.Errorf("unexpected database port reported: %+v / extra_port: %+v", port, extraPort)
 	}
 }
