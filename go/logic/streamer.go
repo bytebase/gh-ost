@@ -220,7 +220,7 @@ func (this *EventsStreamer) Close() (err error) {
 }
 
 func (this *EventsStreamer) Teardown() {
-	this.migrationContext.Log.Debug("Tearing down...")
+	this.migrationContext.Log.Debugf("Tearing down...")
 	this.db.Close()
 	this.Close()
 	atomic.StoreInt64(&this.migrationContext.CutOverCompleteFlag, 1)

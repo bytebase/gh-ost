@@ -116,9 +116,8 @@ func (this *Server) onServerCommand(command string, writer *bufio.Writer) (err e
 		this.printStatus(printStatusRule, writer)
 	} else {
 		fmt.Fprintf(writer, "%s\n", err.Error())
-		this.migrationContext.Log.Errore(err)
 	}
-	return err
+	return this.migrationContext.Log.Errore(err)
 }
 
 // applyServerCommand parses and executes commands by user

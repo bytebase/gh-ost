@@ -10,8 +10,13 @@ import (
 
 	"reflect"
 
+	"github.com/openark/golib/log"
 	test "github.com/openark/golib/tests"
 )
+
+func init() {
+	log.SetLevel(log.ERROR)
+}
 
 func TestParseColumnList(t *testing.T) {
 	names := "id,category,max_len"

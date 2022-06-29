@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 
 	"github.com/github/gh-ost/go/base"
+	"github.com/openark/golib/log"
 )
 
 const (
@@ -82,10 +83,7 @@ func (this *HooksExecutor) executeHook(hook string, extraVariables ...string) er
 
 	combinedOutput, err := cmd.CombinedOutput()
 	fmt.Fprintln(os.Stderr, string(combinedOutput))
-	if err != nil {
-		this.migrationContext.Log.Errore(err)
-	}
-	return err
+	return log.Errore(err)
 }
 
 func (this *HooksExecutor) detectHooks(baseName string) (hooks []string, err error) {
@@ -103,7 +101,7 @@ func (this *HooksExecutor) executeHooks(baseName string, extraVariables ...strin
 		return err
 	}
 	for _, hook := range hooks {
-		this.migrationContext.Log.Infof("executing %+v hook: %+v", baseName, hook)
+		log.Infof("executing %+v hook: %+v", baseName, hook)
 		if err := this.executeHook(hook, extraVariables...); err != nil {
 			return err
 		}
