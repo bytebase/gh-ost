@@ -9,8 +9,13 @@ import (
 	"crypto/tls"
 	"testing"
 
+	"github.com/openark/golib/log"
 	test "github.com/openark/golib/tests"
 )
+
+func init() {
+	log.SetLevel(log.ERROR)
+}
 
 func TestNewConnectionConfig(t *testing.T) {
 	c := NewConnectionConfig()

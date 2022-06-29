@@ -11,8 +11,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openark/golib/log"
 	test "github.com/openark/golib/tests"
 )
+
+func init() {
+	log.SetLevel(log.ERROR)
+}
 
 func TestGetTableNames(t *testing.T) {
 	{
