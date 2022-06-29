@@ -227,7 +227,7 @@ type MigrationContext struct {
 
 	recentBinlogCoordinates mysql.BinlogCoordinates
 
-	Log Logger
+	Log zapLogger
 }
 
 type Logger interface {
@@ -281,7 +281,7 @@ func NewMigrationContext() *MigrationContext {
 		lastHeartbeatOnChangelogMutex:       &sync.Mutex{},
 		ColumnRenameMap:                     make(map[string]string),
 		PanicAbort:                          make(chan error),
-		Log:                                 NewDefaultLogger(),
+		Log:                                 NewZapLogger(),
 	}
 }
 
