@@ -163,7 +163,7 @@ func main() {
 		return
 	}
 
-	migrationContext.Log.SetLevel(zap.InfoLevel)
+	migrationContext.Log.SetLevel(zap.ErrorLevel)
 	if *verbose {
 		migrationContext.Log.SetLevel(zap.InfoLevel)
 	}
