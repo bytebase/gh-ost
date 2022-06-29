@@ -323,6 +323,7 @@ func (this *Migrator) createFlagFiles() (err error) {
 
 // Migrate executes the complete migration logic. This is *the* major gh-ost function.
 func (this *Migrator) Migrate() (err error) {
+	defer this.migrationContext.Log.Sync()
 	this.migrationContext.Log.Infof("Migrating %s.%s", sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.OriginalTableName))
 	this.migrationContext.StartTime = time.Now()
 	if this.migrationContext.Hostname, err = os.Hostname(); err != nil {

@@ -18,6 +18,7 @@ import (
 	"github.com/github/gh-ost/go/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/openark/golib/log"
+	"go.uber.org/zap"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -162,19 +163,20 @@ func main() {
 		return
 	}
 
-	migrationContext.Log.SetLevel(log.ERROR)
+	migrationContext.Log.SetLevel(zap.ErrorLevel)
 	if *verbose {
-		migrationContext.Log.SetLevel(log.INFO)
+		migrationContext.Log.SetLevel(zap.InfoLevel)
 	}
 	if *debug {
-		migrationContext.Log.SetLevel(log.DEBUG)
+		migrationContext.Log.SetLevel(zap.DebugLevel)
 	}
 	if *stack {
-		migrationContext.Log.SetPrintStackTrace(*stack)
+		// activate stack tracing by default
+		// we leave this branch here for compatibility
 	}
 	if *quiet {
 		// Override!!
-		migrationContext.Log.SetLevel(log.ERROR)
+		migrationContext.Log.SetLevel(zap.ErrorLevel)
 	}
 
 	if migrationContext.AlterStatement == "" {
