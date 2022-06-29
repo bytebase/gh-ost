@@ -353,7 +353,7 @@ func (this *Throttler) collectGeneralThrottleMetrics() error {
 		hibernateDuration := time.Duration(this.migrationContext.CriticalLoadHibernateSeconds) * time.Second
 		hibernateUntilTime := time.Now().Add(hibernateDuration)
 		atomic.StoreInt64(&this.migrationContext.HibernateUntil, hibernateUntilTime.UnixNano())
-		this.migrationContext.Log.Sugar().Errorf("critical-load met: %s=%d, >=%d. Will hibernate for the duration of %+v, until %+v", variableName, value, threshold, hibernateDuration, hibernateUntilTime)
+		this.migrationContext.Log.Errorf("critical-load met: %s=%d, >=%d. Will hibernate for the duration of %+v, until %+v", variableName, value, threshold, hibernateDuration, hibernateUntilTime)
 		go func() {
 			time.Sleep(hibernateDuration)
 			this.migrationContext.SetThrottleGeneralCheckResult(base.NewThrottleCheckResult(true, "leaving hibernation", base.LeavingHibernationThrottleReasonHint))
@@ -366,7 +366,7 @@ func (this *Throttler) collectGeneralThrottleMetrics() error {
 		this.migrationContext.PanicAbort <- fmt.Errorf("critical-load met: %s=%d, >=%d", variableName, value, threshold)
 	}
 	if criticalLoadMet && this.migrationContext.CriticalLoadIntervalMilliseconds > 0 {
-		this.migrationContext.Log.Sugar().Errorf("critical-load met once: %s=%d, >=%d. Will check again in %d millis", variableName, value, threshold, this.migrationContext.CriticalLoadIntervalMilliseconds)
+		this.migrationContext.Log.Errorf("critical-load met once: %s=%d, >=%d. Will check again in %d millis", variableName, value, threshold, this.migrationContext.CriticalLoadIntervalMilliseconds)
 		go func() {
 			timer := time.NewTimer(time.Millisecond * time.Duration(this.migrationContext.CriticalLoadIntervalMilliseconds))
 			<-timer.C

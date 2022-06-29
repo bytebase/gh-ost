@@ -103,7 +103,7 @@ func (this *HooksExecutor) executeHooks(baseName string, extraVariables ...strin
 		return err
 	}
 	for _, hook := range hooks {
-		this.migrationContext.Log.Sugar().Infof("executing %+v hook: %+v", baseName, hook)
+		this.migrationContext.Log.Infof("executing %+v hook: %+v", baseName, hook)
 		if err := this.executeHook(hook, extraVariables...); err != nil {
 			return err
 		}

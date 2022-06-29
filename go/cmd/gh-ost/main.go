@@ -18,7 +18,6 @@ import (
 	"github.com/github/gh-ost/go/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -162,23 +161,16 @@ func main() {
 		return
 	}
 
-	logLevel := zap.NewAtomicLevelAt(zap.InfoLevel)
-	migrationContext.Log = zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
-		zapcore.Lock(os.Stdout),
-		logLevel,
-	))
-
-	logLevel.SetLevel(zap.ErrorLevel)
+	migrationContext.Log.SetLevel(zap.ErrorLevel)
 	if *verbose {
-		logLevel.SetLevel(zap.InfoLevel)
+		migrationContext.Log.SetLevel(zap.InfoLevel)
 	}
 	if *debug {
-		logLevel.SetLevel(zap.DebugLevel)
+		migrationContext.Log.SetLevel(zap.DebugLevel)
 	}
 	if *quiet {
 		// Override!!
-		logLevel.SetLevel(zap.ErrorLevel)
+		migrationContext.Log.SetLevel(zap.ErrorLevel)
 	}
 
 	if migrationContext.AlterStatement == "" {
@@ -298,7 +290,7 @@ func main() {
 		migrationContext.Log.Error(err.Error())
 	}
 
-	migrationContext.Log.Sugar().Infof("starting gh-ost %+v", AppVersion)
+	migrationContext.Log.Infof("starting gh-ost %+v", AppVersion)
 	acceptSignals(migrationContext)
 
 	migrator := logic.NewMigrator(migrationContext)

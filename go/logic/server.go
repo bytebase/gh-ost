@@ -48,12 +48,12 @@ func (this *Server) BindSocketFile() (err error) {
 	if err != nil {
 		return err
 	}
-	this.migrationContext.Log.Sugar().Infof("Listening on unix socket file: %s", this.migrationContext.ServeSocketFile)
+	this.migrationContext.Log.Infof("Listening on unix socket file: %s", this.migrationContext.ServeSocketFile)
 	return nil
 }
 
 func (this *Server) RemoveSocketFile() (err error) {
-	this.migrationContext.Log.Sugar().Infof("Removing socket file: %s", this.migrationContext.ServeSocketFile)
+	this.migrationContext.Log.Infof("Removing socket file: %s", this.migrationContext.ServeSocketFile)
 	return os.Remove(this.migrationContext.ServeSocketFile)
 }
 
@@ -65,7 +65,7 @@ func (this *Server) BindTCPPort() (err error) {
 	if err != nil {
 		return err
 	}
-	this.migrationContext.Log.Sugar().Infof("Listening on tcp port: %d", this.migrationContext.ServeTCPPort)
+	this.migrationContext.Log.Infof("Listening on tcp port: %d", this.migrationContext.ServeTCPPort)
 	return nil
 }
 

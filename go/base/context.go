@@ -21,8 +21,6 @@ import (
 	"github.com/github/gh-ost/go/sql"
 
 	"github.com/go-ini/ini"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // RowsEstimateMethod is the type of row number estimation
@@ -228,8 +226,7 @@ type MigrationContext struct {
 
 	recentBinlogCoordinates mysql.BinlogCoordinates
 
-	LogLevel zap.AtomicLevel
-	Log      *zap.Logger
+	Log Log
 }
 type ContextConfig struct {
 	Client struct {
@@ -245,12 +242,7 @@ type ContextConfig struct {
 }
 
 func NewMigrationContext() *MigrationContext {
-	logLevel := zap.NewAtomicLevelAt(zap.InfoLevel)
-	log := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
-		zapcore.Lock(os.Stdout),
-		logLevel,
-	))
+
 	return &MigrationContext{
 		Uuid:                                uuid.NewV4().String(),
 		defaultNumRetries:                   60,
@@ -271,8 +263,7 @@ func NewMigrationContext() *MigrationContext {
 		lastHeartbeatOnChangelogMutex:       &sync.Mutex{},
 		ColumnRenameMap:                     make(map[string]string),
 		PanicAbort:                          make(chan error),
-		Log:                                 log,
-		LogLevel:                            logLevel,
+		Log:                                 NewDefaultLogger(),
 	}
 }
 
