@@ -247,7 +247,7 @@ func main() {
 	case "two-step":
 		migrationContext.CutOverType = base.CutOverTwoStep
 	default:
-		migrationContext.Log.Fatal("Unknown cut-over", zap.String("cutover", *cutOver))
+		migrationContext.Log.Fatalf("Unknown cut-over: %s", *cutOver)
 	}
 	if err := migrationContext.ReadConfigFile(); err != nil {
 		migrationContext.Log.Fatale(err)

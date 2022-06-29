@@ -645,7 +645,7 @@ func (this *Applier) RenameTablesRollback() (renameError error) {
 	if _, err := sqlutils.ExecNoPrepare(this.db, query); err != nil {
 		renameError = err
 	}
-	this.migrationContext.Log.Error(renameError.Error())
+	this.migrationContext.Log.Errore(renameError)
 	return renameError
 }
 
