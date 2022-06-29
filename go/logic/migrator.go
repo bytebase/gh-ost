@@ -259,7 +259,9 @@ func (this *Migrator) onChangelogHeartbeatEvent(dmlEvent *binlog.BinlogDMLEvent)
 // listenOnPanicAbort aborts on abort request
 func (this *Migrator) listenOnPanicAbort() {
 	err := <-this.migrationContext.PanicAbort
-	this.migrationContext.Log.Panic(err.Error())
+	if err != nil {
+		this.migrationContext.Log.Panic(err.Error())
+	}
 }
 
 // validateStatement validates the `alter` statement meets criteria.
@@ -1131,7 +1133,9 @@ func (this *Migrator) initiateApplier() error {
 func (this *Migrator) iterateChunks() error {
 	terminateRowIteration := func(err error) error {
 		this.rowCopyComplete <- err
-		this.migrationContext.Log.Error(err.Error())
+		if err != nil {
+			this.migrationContext.Log.Error(err.Error())
+		}
 		return err
 	}
 	if this.migrationContext.Noop {

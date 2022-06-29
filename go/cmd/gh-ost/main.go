@@ -298,7 +298,7 @@ func main() {
 		migrationContext.Log.Error(err.Error())
 	}
 
-	migrationContext.Log.Info(fmt.Sprintf("starting gh-ost %+v", AppVersion))
+	migrationContext.Log.Sugar().Infof("starting gh-ost %+v", AppVersion)
 	acceptSignals(migrationContext)
 
 	migrator := logic.NewMigrator(migrationContext)

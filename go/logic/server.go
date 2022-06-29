@@ -116,8 +116,8 @@ func (this *Server) onServerCommand(command string, writer *bufio.Writer) (err e
 		this.printStatus(printStatusRule, writer)
 	} else {
 		fmt.Fprintf(writer, "%s\n", err.Error())
+		this.migrationContext.Log.Error(err.Error())
 	}
-	this.migrationContext.Log.Error(err.Error())
 	return err
 }
 
