@@ -12,17 +12,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/openark/golib/log"
 	test "github.com/openark/golib/tests"
 )
 
 var (
 	spacesRegexp = regexp.MustCompile(`[ \t\n\r]+`)
 )
-
-func init() {
-	log.SetLevel(log.ERROR)
-}
 
 func normalizeQuery(name string) string {
 	name = strings.Replace(name, "`", "", -1)

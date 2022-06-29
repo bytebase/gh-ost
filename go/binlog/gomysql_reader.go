@@ -6,6 +6,7 @@
 package binlog
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -58,7 +59,8 @@ func NewGoMySQLReader(migrationContext *base.MigrationContext) (binlogReader *Go
 // ConnectBinlogStreamer
 func (this *GoMySQLReader) ConnectBinlogStreamer(coordinates mysql.BinlogCoordinates) (err error) {
 	if coordinates.IsEmpty() {
-		return this.migrationContext.Log.Errorf("Empty coordinates at ConnectBinlogStreamer()")
+		this.migrationContext.Log.Error("Empty coordinates at ConnectBinlogStreamer()")
+		return errors.New("Empty coordinates at ConnectBinlogStreamer()")
 	}
 
 	this.currentCoordinates = coordinates
@@ -88,7 +90,7 @@ func (this *GoMySQLReader) handleRowsEvent(ev *replication.BinlogEvent, rowsEven
 
 	dml := ToEventDML(ev.Header.EventType.String())
 	if dml == NotDML {
-		return fmt.Errorf("Unknown DML type: %s", ev.Header.EventType.String())
+		return fmt.Errorf("unknown DML type: %s", ev.Header.EventType.String())
 	}
 	for i, row := range rowsEvent.Rows {
 		if dml == UpdateDML && i%2 == 1 {
@@ -158,7 +160,7 @@ func (this *GoMySQLReader) StreamEvents(canStopStreaming func() bool, entriesCha
 			}
 		}
 	}
-	this.migrationContext.Log.Debugf("done streaming events")
+	this.migrationContext.Log.Debug("done streaming events")
 
 	return nil
 }
