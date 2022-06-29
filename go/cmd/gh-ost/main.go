@@ -136,6 +136,7 @@ func main() {
 	quiet := flag.Bool("quiet", false, "quiet")
 	verbose := flag.Bool("verbose", false, "verbose")
 	debug := flag.Bool("debug", false, "debug mode (very verbose)")
+	// This flag is a compatibility flag for gh-ost. Stack info is always printed for error logging level and above.
 	_ = flag.Bool("stack", false, "add stack trace upon error")
 	help := flag.Bool("help", false, "Display usage")
 	version := flag.Bool("version", false, "Print version & exit")

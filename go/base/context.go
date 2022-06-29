@@ -226,7 +226,7 @@ type MigrationContext struct {
 
 	recentBinlogCoordinates mysql.BinlogCoordinates
 
-	Log Log
+	Log Logger
 }
 type ContextConfig struct {
 	Client struct {
