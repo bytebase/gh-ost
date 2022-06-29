@@ -82,8 +82,10 @@ func (l *zapLogger) Panic(args ...interface{}) {
 	l.logger.Panic(args)
 }
 
-func (l *zapLogger) Panicf(template string, args ...interface{}) {
-	l.logger.Panicf(template, args...)
+func (l *zapLogger) Panicf(template string, args ...interface{}) error {
+	err := fmt.Errorf(template, args...)
+	l.logger.Panic(err)
+	return err
 }
 
 func (l *zapLogger) Panice(err error) {

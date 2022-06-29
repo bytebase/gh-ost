@@ -258,7 +258,7 @@ func (this *Migrator) onChangelogHeartbeatEvent(dmlEvent *binlog.BinlogDMLEvent)
 // listenOnPanicAbort aborts on abort request
 func (this *Migrator) listenOnPanicAbort() {
 	err := <-this.migrationContext.PanicAbort
-	this.migrationContext.Log.Fatale(err)
+	this.migrationContext.Log.Panice(err)
 }
 
 // validateStatement validates the `alter` statement meets criteria.
@@ -547,7 +547,7 @@ func (this *Migrator) cutOver() (err error) {
 		this.handleCutOverResult(err)
 		return err
 	}
-	return this.migrationContext.Log.Fatalf("Unknown cut-over type: %d; should never get here!", this.migrationContext.CutOverType)
+	return this.migrationContext.Log.Panicf("Unknown cut-over type: %d; should never get here!", this.migrationContext.CutOverType)
 }
 
 // Inject the "AllEventsUpToLockProcessed" state hint, wait for it to appear in the binary logs,
