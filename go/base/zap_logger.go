@@ -82,23 +82,30 @@ func (l *zapLogger) Panic(args ...interface{}) {
 	l.logger.Panic(args)
 }
 
-func (l *zapLogger) Panicf(template string, args ...interface{}) {
-	l.logger.Panicf(template, args...)
+func (l *zapLogger) Panicf(template string, args ...interface{}) error {
+	err := fmt.Errorf(template, args...)
+	l.logger.Panic(err)
+	return err
 }
 
 func (l *zapLogger) Panice(err error) {
 	l.logger.Panic(err.Error())
 }
 
+// Call panic in Fatal because
+// we use gh-ost as a library and we don't want to kill our whole progress.
 func (l *zapLogger) Fatal(args ...interface{}) {
-	l.logger.Fatal(args)
+	l.Panic(args)
 }
 
+// Call panic in Fatalf because
+// we use gh-ost as a library and we don't want to kill our whole progress.
 func (l *zapLogger) Fatalf(template string, args ...interface{}) error {
-	err := fmt.Errorf(template, args...)
-	l.logger.Fatal(err)
-	return err
+	return l.Panicf(template, args...)
 }
+
+// Call panic in Fatale because
+// we use gh-ost as a library and we don't want to kill our whole progress.
 func (l *zapLogger) Fatale(err error) {
-	l.logger.Fatal(err.Error())
+	l.Panice(err)
 }
