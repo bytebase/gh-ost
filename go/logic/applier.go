@@ -160,7 +160,7 @@ func (this *Applier) ValidateOrDropExistingTables() error {
 		}
 	}
 	if len(this.migrationContext.GetOldTableName()) > mysql.MaxTableNameLength {
-		this.migrationContext.Log.Panicf("--timestamp-old-table defined, but resulting table name (%s) is too long (only %d characters allowed)", this.migrationContext.GetOldTableName(), mysql.MaxTableNameLength)
+		this.migrationContext.Log.Fatalf("--timestamp-old-table defined, but resulting table name (%s) is too long (only %d characters allowed)", this.migrationContext.GetOldTableName(), mysql.MaxTableNameLength)
 	}
 
 	if this.tableExists(this.migrationContext.GetOldTableName()) {

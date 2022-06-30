@@ -92,15 +92,17 @@ func (l *zapLogger) Panice(err error) {
 	l.logger.Panic(err.Error())
 }
 
+// panic in Fatal
 func (l *zapLogger) Fatal(args ...interface{}) {
-	l.logger.Fatal(args)
+	l.Panic(args)
 }
 
+// panic in Fatalf
 func (l *zapLogger) Fatalf(template string, args ...interface{}) error {
-	err := fmt.Errorf(template, args...)
-	l.logger.Fatal(err)
-	return err
+	return l.Panicf(template, args...)
 }
+
+// panic in Fatale
 func (l *zapLogger) Fatale(err error) {
-	l.logger.Fatal(err.Error())
+	l.Panice(err)
 }
