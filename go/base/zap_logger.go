@@ -92,17 +92,20 @@ func (l *zapLogger) Panice(err error) {
 	l.logger.Panic(err.Error())
 }
 
-// panic in Fatal
+// Call panic in Fatal because
+// we use gh-ost as a library and we don't want to kill our whole progress.
 func (l *zapLogger) Fatal(args ...interface{}) {
 	l.Panic(args)
 }
 
-// panic in Fatalf
+// Call panic in Fatalf because
+// we use gh-ost as a library and we don't want to kill our whole progress.
 func (l *zapLogger) Fatalf(template string, args ...interface{}) error {
 	return l.Panicf(template, args...)
 }
 
-// panic in Fatale
+// Call panic in Fatale because
+// we use gh-ost as a library and we don't want to kill our whole progress.
 func (l *zapLogger) Fatale(err error) {
 	l.Panice(err)
 }
