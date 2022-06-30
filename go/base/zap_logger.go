@@ -14,7 +14,7 @@ type zapLogger struct {
 }
 
 func NewZapLogger() zapLogger {
-	logLevel := zap.NewAtomicLevelAt(zap.InfoLevel)
+	logLevel := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	log := zap.New(
 		zapcore.NewCore(
 			zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
