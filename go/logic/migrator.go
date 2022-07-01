@@ -257,11 +257,10 @@ func (this *Migrator) onChangelogHeartbeatEvent(dmlEvent *binlog.BinlogDMLEvent)
 	}
 }
 
-// listenOnPanicAbort aborts on abort request
+// listenOnPanicAbort tries to gracefully shutdown gh-ost on abort request
 func (this *Migrator) listenOnPanicAbort() {
 	err := <-this.migrationContext.PanicAbort
 	this.migrationContext.Log.Errore(err)
-
 	this.teardown()
 }
 
