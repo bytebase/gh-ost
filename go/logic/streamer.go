@@ -181,10 +181,12 @@ func (this *EventsStreamer) StreamEvents(canStopStreaming func() bool) error {
 	var lastAppliedRowsEventHint mysql.BinlogCoordinates
 	for {
 		if canStopStreaming() {
+			close(this.eventsChannel)
 			return nil
 		}
 		if err := this.binlogReader.StreamEvents(canStopStreaming, this.eventsChannel); err != nil {
 			if canStopStreaming() {
+				close(this.eventsChannel)
 				return nil
 			}
 

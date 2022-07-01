@@ -181,6 +181,7 @@ func (this *Migrator) retryOperationWithExponentialBackoff(operation func() erro
 func (this *Migrator) consumeRowCopyComplete() {
 	if err := <-this.rowCopyComplete; err != nil {
 		this.migrationContext.PanicAbort <- err
+		return
 	}
 	atomic.StoreInt64(&this.rowCopyCompleteFlag, 1)
 	this.migrationContext.MarkRowCopyEndTime()
@@ -188,6 +189,7 @@ func (this *Migrator) consumeRowCopyComplete() {
 		for err := range this.rowCopyComplete {
 			if err != nil {
 				this.migrationContext.PanicAbort <- err
+				return
 			}
 		}
 	}()
@@ -255,10 +257,11 @@ func (this *Migrator) onChangelogHeartbeatEvent(dmlEvent *binlog.BinlogDMLEvent)
 	}
 }
 
-// listenOnPanicAbort aborts on abort request
+// listenOnPanicAbort tries to gracefully shutdown gh-ost on abort request
 func (this *Migrator) listenOnPanicAbort() {
 	err := <-this.migrationContext.PanicAbort
-	this.migrationContext.Log.Fatale(err)
+	this.migrationContext.Log.Errore(err)
+	this.teardown()
 }
 
 // validateStatement validates the `alter` statement meets criteria.
@@ -547,7 +550,7 @@ func (this *Migrator) cutOver() (err error) {
 		this.handleCutOverResult(err)
 		return err
 	}
-	return this.migrationContext.Log.Fatalf("Unknown cut-over type: %d; should never get here!", this.migrationContext.CutOverType)
+	return this.migrationContext.Log.Errorf("Unknown cut-over type: %d; should never get here!", this.migrationContext.CutOverType)
 }
 
 // Inject the "AllEventsUpToLockProcessed" state hint, wait for it to appear in the binary logs,
@@ -727,6 +730,7 @@ func (this *Migrator) initiateServer() (err error) {
 		return err
 	}
 
+	//TODO(p0ny): collect after migration
 	go this.server.Serve()
 	return nil
 }
@@ -1124,19 +1128,25 @@ func (this *Migrator) iterateChunks() error {
 	}
 	if this.migrationContext.Noop {
 		this.migrationContext.Log.Debugf("Noop operation; not really copying data")
-		return terminateRowIteration(nil)
+		terminateRowIteration(nil)
+		close(this.rowCopyComplete)
+		return nil
 	}
 	if this.migrationContext.MigrationRangeMinValues == nil {
 		this.migrationContext.Log.Debugf("No rows found in table. Rowcopy will be implicitly empty")
-		return terminateRowIteration(nil)
+		terminateRowIteration(nil)
+		close(this.rowCopyComplete)
+		return nil
 	}
 
 	var hasNoFurtherRangeFlag int64
 	// Iterate per chunk:
 	for {
-		if atomic.LoadInt64(&this.rowCopyCompleteFlag) == 1 || atomic.LoadInt64(&hasNoFurtherRangeFlag) == 1 {
+		// check finishedMigrating here so that this go routine can exit if teardown is called
+		if atomic.LoadInt64(&this.rowCopyCompleteFlag) == 1 || atomic.LoadInt64(&hasNoFurtherRangeFlag) == 1 || atomic.LoadInt64(&this.finishedMigrating) == 1 {
 			// Done
 			// There's another such check down the line
+			close(this.rowCopyComplete)
 			return nil
 		}
 		copyRowsFunc := func() error {
@@ -1335,7 +1345,6 @@ func (this *Migrator) finalCleanup() error {
 
 func (this *Migrator) teardown() {
 	atomic.StoreInt64(&this.finishedMigrating, 1)
-
 	if this.inspector != nil {
 		this.migrationContext.Log.Infof("Tearing down inspector")
 		this.inspector.Teardown()
