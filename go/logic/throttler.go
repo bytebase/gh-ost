@@ -161,8 +161,9 @@ func (this *Throttler) collectReplicationLag(firstThrottlingCollected chan<- boo
 	collectFunc()
 	firstThrottlingCollected <- true
 
-	ticker := time.Tick(time.Duration(this.migrationContext.HeartbeatIntervalMilliseconds) * time.Millisecond)
-	for range ticker {
+	ticker := time.NewTicker(time.Duration(this.migrationContext.HeartbeatIntervalMilliseconds) * time.Millisecond)
+	defer ticker.Stop()
+	for range ticker.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return
 		}
@@ -237,12 +238,13 @@ func (this *Throttler) collectControlReplicasLag() {
 		}
 		this.migrationContext.SetControlReplicasLagResult(readControlReplicasLag())
 	}
-	aggressiveTicker := time.Tick(100 * time.Millisecond)
+	aggressiveTicker := time.NewTicker(100 * time.Millisecond)
+	defer aggressiveTicker.Stop()
 	relaxedFactor := 10
 	counter := 0
 	shouldReadLagAggressively := false
 
-	for range aggressiveTicker {
+	for range aggressiveTicker.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return
 		}
@@ -303,8 +305,9 @@ func (this *Throttler) collectThrottleHTTPStatus(firstThrottlingCollected chan<-
 
 	firstThrottlingCollected <- true
 
-	ticker := time.Tick(100 * time.Millisecond)
-	for range ticker {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for range ticker.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return
 		}
@@ -423,8 +426,9 @@ func (this *Throttler) initiateThrottlerCollection(firstThrottlingCollected chan
 		this.collectGeneralThrottleMetrics()
 		firstThrottlingCollected <- true
 
-		throttlerMetricsTick := time.Tick(1 * time.Second)
-		for range throttlerMetricsTick {
+		throttlerMetricsTick := time.NewTicker(1 * time.Second)
+		defer throttlerMetricsTick.Stop()
+		for range throttlerMetricsTick.C {
 			if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 				return
 			}
@@ -436,7 +440,8 @@ func (this *Throttler) initiateThrottlerCollection(firstThrottlingCollected chan
 
 // initiateThrottlerChecks initiates the throttle ticker and sets the basic behavior of throttling.
 func (this *Throttler) initiateThrottlerChecks() error {
-	throttlerTick := time.Tick(100 * time.Millisecond)
+	throttlerTick := time.NewTicker(100 * time.Millisecond)
+	defer throttlerTick.Stop()
 
 	throttlerFunction := func() {
 		alreadyThrottling, currentReason, _ := this.migrationContext.IsThrottled()
@@ -454,7 +459,7 @@ func (this *Throttler) initiateThrottlerChecks() error {
 		this.migrationContext.SetThrottled(shouldThrottle, throttleReason, throttleReasonHint)
 	}
 	throttlerFunction()
-	for range throttlerTick {
+	for range throttlerTick.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return nil
 		}

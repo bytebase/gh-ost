@@ -796,8 +796,9 @@ func (this *Migrator) initiateInspector() (err error) {
 // initiateStatus sets and activates the printStatus() ticker
 func (this *Migrator) initiateStatus() error {
 	this.printStatus(ForcePrintStatusAndHintRule)
-	statusTick := time.Tick(1 * time.Second)
-	for range statusTick {
+	statusTick := time.NewTicker(1 * time.Second)
+	defer statusTick.Stop()
+	for range statusTick.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return nil
 		}
@@ -1036,8 +1037,9 @@ func (this *Migrator) initiateStreaming() error {
 	}()
 
 	go func() {
-		ticker := time.Tick(1 * time.Second)
-		for range ticker {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
 			if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 				return
 			}

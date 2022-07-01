@@ -344,8 +344,9 @@ func (this *Applier) InitiateHeartbeat() {
 	}
 	injectHeartbeat()
 
-	heartbeatTick := time.Tick(time.Duration(this.migrationContext.HeartbeatIntervalMilliseconds) * time.Millisecond)
-	for range heartbeatTick {
+	heartbeatTick := time.NewTicker(time.Duration(this.migrationContext.HeartbeatIntervalMilliseconds) * time.Millisecond)
+	defer heartbeatTick.Stop()
+	for range heartbeatTick.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return
 		}
