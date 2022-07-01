@@ -170,6 +170,7 @@ func (this *EventsStreamer) readCurrentBinlogCoordinates() error {
 // executed by a goroutine
 func (this *EventsStreamer) StreamEvents(canStopStreaming func() bool) error {
 	go func() {
+		//TODO(xz): close eventsChannel done
 		for binlogEntry := range this.eventsChannel {
 			if binlogEntry.DmlEvent != nil {
 				this.notifyListeners(binlogEntry.DmlEvent)
@@ -181,10 +182,12 @@ func (this *EventsStreamer) StreamEvents(canStopStreaming func() bool) error {
 	var lastAppliedRowsEventHint mysql.BinlogCoordinates
 	for {
 		if canStopStreaming() {
+			close(this.eventsChannel)
 			return nil
 		}
 		if err := this.binlogReader.StreamEvents(canStopStreaming, this.eventsChannel); err != nil {
 			if canStopStreaming() {
+				close(this.eventsChannel)
 				return nil
 			}
 

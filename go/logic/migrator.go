@@ -181,13 +181,16 @@ func (this *Migrator) retryOperationWithExponentialBackoff(operation func() erro
 func (this *Migrator) consumeRowCopyComplete() {
 	if err := <-this.rowCopyComplete; err != nil {
 		this.migrationContext.PanicAbort <- err
+		return
 	}
 	atomic.StoreInt64(&this.rowCopyCompleteFlag, 1)
 	this.migrationContext.MarkRowCopyEndTime()
 	go func() {
+		// TODO(xz): close row copy complete
 		for err := range this.rowCopyComplete {
 			if err != nil {
 				this.migrationContext.PanicAbort <- err
+				return
 			}
 		}
 	}()
@@ -258,7 +261,9 @@ func (this *Migrator) onChangelogHeartbeatEvent(dmlEvent *binlog.BinlogDMLEvent)
 // listenOnPanicAbort aborts on abort request
 func (this *Migrator) listenOnPanicAbort() {
 	err := <-this.migrationContext.PanicAbort
-	this.migrationContext.Log.Fatale(err)
+	this.migrationContext.Log.Errore(err)
+
+	this.teardown()
 }
 
 // validateStatement validates the `alter` statement meets criteria.
@@ -302,6 +307,7 @@ func (this *Migrator) countTableRows() (err error) {
 
 	if this.migrationContext.ConcurrentCountTableRows {
 		this.migrationContext.Log.Infof("As instructed, counting rows in the background; meanwhile I will use an estimated count, and will update it later on")
+		//TODO(xz): safe
 		go countRowsFunc()
 		// and we ignore errors, because this turns to be a background job
 		return nil
@@ -398,6 +404,7 @@ func (this *Migrator) Migrate() (err error) {
 	if err := this.hooksExecutor.onBeforeRowCopy(); err != nil {
 		return err
 	}
+	//TODO(xz): safe
 	go this.executeWriteFuncs()
 	go this.iterateChunks()
 	this.migrationContext.MarkRowCopyStartTime()
@@ -547,7 +554,7 @@ func (this *Migrator) cutOver() (err error) {
 		this.handleCutOverResult(err)
 		return err
 	}
-	return this.migrationContext.Log.Fatalf("Unknown cut-over type: %d; should never get here!", this.migrationContext.CutOverType)
+	return this.migrationContext.Log.Errorf("Unknown cut-over type: %d; should never get here!", this.migrationContext.CutOverType)
 }
 
 // Inject the "AllEventsUpToLockProcessed" state hint, wait for it to appear in the binary logs,
@@ -638,6 +645,7 @@ func (this *Migrator) atomicCutOver() (err error) {
 	lockOriginalSessionIdChan := make(chan int64, 2)
 	tableLocked := make(chan error, 2)
 	tableUnlocked := make(chan error, 2)
+	//TODO(xz): safe
 	go func() {
 		if err := this.applier.AtomicCutOverMagicLock(lockOriginalSessionIdChan, tableLocked, okToUnlockTable, tableUnlocked, &dropCutOverSentryTableOnce); err != nil {
 			this.migrationContext.Log.Errore(err)
@@ -661,6 +669,7 @@ func (this *Migrator) atomicCutOver() (err error) {
 	var tableRenameKnownToHaveFailed int64
 	renameSessionIdChan := make(chan int64, 2)
 	tablesRenamed := make(chan error, 2)
+	//TODO(xz): safe
 	go func() {
 		if err := this.applier.AtomicCutoverRename(renameSessionIdChan, tablesRenamed); err != nil {
 			// Abort! Release the lock
@@ -727,6 +736,7 @@ func (this *Migrator) initiateServer() (err error) {
 		return err
 	}
 
+	//TODO(p0ny): collect after migration
 	go this.server.Serve()
 	return nil
 }
@@ -803,6 +813,7 @@ func (this *Migrator) initiateStatus() error {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return nil
 		}
+		//TODO(xz): safe
 		go this.printStatus(HeuristicPrintStatusRule)
 	}
 
@@ -1015,6 +1026,7 @@ func (this *Migrator) printStatus(rule PrintStatusRule, writers ...io.Writer) {
 
 // initiateStreaming begins streaming of binary log events and registers listeners for such events
 func (this *Migrator) initiateStreaming() error {
+	// TODO(xz): no eventsStreamer publish after teardown
 	this.eventsStreamer = NewEventsStreamer(this.migrationContext)
 	if err := this.eventsStreamer.InitDBConnections(); err != nil {
 		return err
@@ -1028,6 +1040,7 @@ func (this *Migrator) initiateStreaming() error {
 		},
 	)
 
+	//TODO(xz): safe
 	go func() {
 		this.migrationContext.Log.Debugf("Beginning streaming")
 		err := this.eventsStreamer.StreamEvents(this.canStopStreaming)
@@ -1037,6 +1050,7 @@ func (this *Migrator) initiateStreaming() error {
 		this.migrationContext.Log.Debugf("Done streaming")
 	}()
 
+	//TODO(xz): safe
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
@@ -1111,6 +1125,7 @@ func (this *Migrator) initiateApplier() error {
 		}
 	}
 	this.applier.WriteChangelogState(string(GhostTableMigrated))
+	//TODO(xz): safe
 	go this.applier.InitiateHeartbeat()
 	return nil
 }
@@ -1124,19 +1139,25 @@ func (this *Migrator) iterateChunks() error {
 	}
 	if this.migrationContext.Noop {
 		this.migrationContext.Log.Debugf("Noop operation; not really copying data")
-		return terminateRowIteration(nil)
+		terminateRowIteration(nil)
+		close(this.rowCopyComplete)
+		return nil
 	}
 	if this.migrationContext.MigrationRangeMinValues == nil {
 		this.migrationContext.Log.Debugf("No rows found in table. Rowcopy will be implicitly empty")
-		return terminateRowIteration(nil)
+		terminateRowIteration(nil)
+		close(this.rowCopyComplete)
+		return nil
 	}
 
 	var hasNoFurtherRangeFlag int64
 	// Iterate per chunk:
 	for {
-		if atomic.LoadInt64(&this.rowCopyCompleteFlag) == 1 || atomic.LoadInt64(&hasNoFurtherRangeFlag) == 1 {
+		// check finishedMigrating here so that this go routine can exit if teardown is called
+		if atomic.LoadInt64(&this.rowCopyCompleteFlag) == 1 || atomic.LoadInt64(&hasNoFurtherRangeFlag) == 1 || atomic.LoadInt64(&this.finishedMigrating) == 1 {
 			// Done
 			// There's another such check down the line
+			close(this.rowCopyComplete)
 			return nil
 		}
 		copyRowsFunc := func() error {
@@ -1335,7 +1356,6 @@ func (this *Migrator) finalCleanup() error {
 
 func (this *Migrator) teardown() {
 	atomic.StoreInt64(&this.finishedMigrating, 1)
-
 	if this.inspector != nil {
 		this.migrationContext.Log.Infof("Tearing down inspector")
 		this.inspector.Teardown()

@@ -167,6 +167,7 @@ func (this *Throttler) collectReplicationLag(firstThrottlingCollected chan<- boo
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return
 		}
+		//TODO(xz): safe
 		go collectFunc()
 	}
 }
@@ -213,6 +214,7 @@ func (this *Throttler) collectControlReplicasLag() {
 			connectionConfig.Key = replicaKey
 
 			lagResult := &mysql.ReplicationLagResult{Key: connectionConfig.Key}
+			//TODO(xz): safe
 			go func() {
 				lagResult.Lag, lagResult.Err = readReplicaLag(connectionConfig)
 				lagResults <- lagResult
@@ -354,6 +356,7 @@ func (this *Throttler) collectGeneralThrottleMetrics() error {
 		hibernateUntilTime := time.Now().Add(hibernateDuration)
 		atomic.StoreInt64(&this.migrationContext.HibernateUntil, hibernateUntilTime.UnixNano())
 		this.migrationContext.Log.Errorf("critical-load met: %s=%d, >=%d. Will hibernate for the duration of %+v, until %+v", variableName, value, threshold, hibernateDuration, hibernateUntilTime)
+		//TODO(xz): safe
 		go func() {
 			time.Sleep(hibernateDuration)
 			this.migrationContext.SetThrottleGeneralCheckResult(base.NewThrottleCheckResult(true, "leaving hibernation", base.LeavingHibernationThrottleReasonHint))
@@ -367,6 +370,7 @@ func (this *Throttler) collectGeneralThrottleMetrics() error {
 	}
 	if criticalLoadMet && this.migrationContext.CriticalLoadIntervalMilliseconds > 0 {
 		this.migrationContext.Log.Errorf("critical-load met once: %s=%d, >=%d. Will check again in %d millis", variableName, value, threshold, this.migrationContext.CriticalLoadIntervalMilliseconds)
+		//TODO(xz): safe
 		go func() {
 			timer := time.NewTimer(time.Millisecond * time.Duration(this.migrationContext.CriticalLoadIntervalMilliseconds))
 			<-timer.C
@@ -418,10 +422,12 @@ func (this *Throttler) collectGeneralThrottleMetrics() error {
 // that may affect throttling. There are several components, all running independently,
 // that collect such metrics.
 func (this *Throttler) initiateThrottlerCollection(firstThrottlingCollected chan<- bool) {
+	//TODO(xz): all 3 are safe
 	go this.collectReplicationLag(firstThrottlingCollected)
 	go this.collectControlReplicasLag()
 	go this.collectThrottleHTTPStatus(firstThrottlingCollected)
 
+	//TODO(xz): safe
 	go func() {
 		this.collectGeneralThrottleMetrics()
 		firstThrottlingCollected <- true
@@ -459,6 +465,7 @@ func (this *Throttler) initiateThrottlerChecks() error {
 		this.migrationContext.SetThrottled(shouldThrottle, throttleReason, throttleReasonHint)
 	}
 	throttlerFunction()
+	//TODO(xz): safe
 	for range throttlerTick.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return nil
