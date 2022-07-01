@@ -170,7 +170,6 @@ func (this *EventsStreamer) readCurrentBinlogCoordinates() error {
 // executed by a goroutine
 func (this *EventsStreamer) StreamEvents(canStopStreaming func() bool) error {
 	go func() {
-		//TODO(xz): close eventsChannel done
 		for binlogEntry := range this.eventsChannel {
 			if binlogEntry.DmlEvent != nil {
 				this.notifyListeners(binlogEntry.DmlEvent)
