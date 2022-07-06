@@ -10,3 +10,5 @@ linters:
     - gosimple
     - govet
     - unused
+    - rowserrcheck
+    - sqlclosecheck
