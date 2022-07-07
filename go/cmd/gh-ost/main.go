@@ -20,7 +20,8 @@ import (
 	"github.com/openark/golib/log"
 	"go.uber.org/zap"
 
-	"golang.org/x/crypto/ssh/terminal"
+	// TODO: move to golang.org/x/term
+	"golang.org/x/crypto/ssh/terminal" // nolint:staticcheck
 )
 
 var AppVersion string

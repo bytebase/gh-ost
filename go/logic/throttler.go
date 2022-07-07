@@ -245,13 +245,13 @@ func (this *Throttler) collectControlReplicasLag() {
 		}
 		this.migrationContext.SetControlReplicasLagResult(readControlReplicasLag())
 	}
-	aggressiveTicker := time.NewTicker(100 * time.Millisecond)
-	defer aggressiveTicker.Stop()
 	relaxedFactor := 10
 	counter := 0
 	shouldReadLagAggressively := false
 
-	for range aggressiveTicker.C {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for range ticker.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 			return
 		}
@@ -444,9 +444,9 @@ func (this *Throttler) initiateThrottlerCollection(firstThrottlingCollected chan
 		this.collectGeneralThrottleMetrics()
 		firstThrottlingCollected <- true
 
-		throttlerMetricsTick := time.NewTicker(1 * time.Second)
-		defer throttlerMetricsTick.Stop()
-		for range throttlerMetricsTick.C {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
 			if atomic.LoadInt64(&this.finishedMigrating) > 0 {
 				return
 			}
@@ -457,10 +457,7 @@ func (this *Throttler) initiateThrottlerCollection(firstThrottlingCollected chan
 }
 
 // initiateThrottlerChecks initiates the throttle ticker and sets the basic behavior of throttling.
-func (this *Throttler) initiateThrottlerChecks() error {
-	throttlerTick := time.NewTicker(100 * time.Millisecond)
-	defer throttlerTick.Stop()
-
+func (this *Throttler) initiateThrottlerChecks() {
 	throttlerFunction := func() {
 		alreadyThrottling, currentReason, _ := this.migrationContext.IsThrottled()
 		shouldThrottle, throttleReason, throttleReasonHint := this.shouldThrottle()
@@ -477,14 +474,15 @@ func (this *Throttler) initiateThrottlerChecks() error {
 		this.migrationContext.SetThrottled(shouldThrottle, throttleReason, throttleReasonHint)
 	}
 	throttlerFunction()
-	for range throttlerTick.C {
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for range ticker.C {
 		if atomic.LoadInt64(&this.finishedMigrating) > 0 {
-			return nil
+			return
 		}
 		throttlerFunction()
 	}
-
-	return nil
 }
 
 // throttle sees if throttling needs take place, and if so, continuously sleeps (blocks)
