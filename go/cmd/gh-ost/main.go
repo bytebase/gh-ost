@@ -172,7 +172,7 @@ func main() {
 	if *debug {
 		migrationContext.Log.SetLevel(zap.DebugLevel)
 	}
-	if *stack {
+	if *stack { // nolint:staticcheck
 		// activate stack tracing by default
 		// we leave this branch here for compatibility
 	}
