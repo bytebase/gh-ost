@@ -20,7 +20,7 @@ import (
 	"github.com/openark/golib/log"
 	"go.uber.org/zap"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 var AppVersion string
@@ -172,7 +172,7 @@ func main() {
 	if *debug {
 		migrationContext.Log.SetLevel(zap.DebugLevel)
 	}
-	if *stack {
+	if *stack { // nolint:staticcheck
 		// activate stack tracing by default
 		// we leave this branch here for compatibility
 	}
@@ -272,7 +272,7 @@ func main() {
 	}
 	if *askPass {
 		fmt.Println("Password:")
-		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 		if err != nil {
 			migrationContext.Log.Fatale(err)
 		}
