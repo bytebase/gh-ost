@@ -1034,7 +1034,6 @@ func (this *Applier) buildDMLEventQuery(dmlEvent *binlog.BinlogDMLEvent) (result
 
 // ApplyDMLEventQueries applies multiple DML queries onto the _ghost_ table
 func (this *Applier) ApplyDMLEventQueries(dmlEvents [](*binlog.BinlogDMLEvent)) error {
-
 	var totalDelta int64
 
 	err := func() error {
