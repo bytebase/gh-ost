@@ -17,7 +17,6 @@ import (
 	"github.com/github/gh-ost/go/logic"
 	"github.com/github/gh-ost/go/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/openark/golib/log"
 	"go.uber.org/zap"
 
 	"golang.org/x/term"
@@ -36,7 +35,7 @@ func acceptSignals(migrationContext *base.MigrationContext) {
 			case syscall.SIGHUP:
 				migrationContext.Log.Infof("Received SIGHUP. Reloading configuration")
 				if err := migrationContext.ReadConfigFile(); err != nil {
-					log.Errore(err)
+					migrationContext.Log.Errore(err)
 				} else {
 					migrationContext.MarkPointOfInterest()
 				}
@@ -182,7 +181,7 @@ func main() {
 	}
 
 	if migrationContext.AlterStatement == "" {
-		log.Fatalf("--alter must be provided and statement must not be empty")
+		migrationContext.Log.Fatalf("--alter must be provided and statement must not be empty")
 	}
 	parser := sql.NewParserFromAlterStatement(migrationContext.AlterStatement)
 	migrationContext.AlterStatementOptions = parser.GetAlterStatementOptions()
@@ -191,7 +190,7 @@ func main() {
 		if parser.HasExplicitSchema() {
 			migrationContext.DatabaseName = parser.GetExplicitSchema()
 		} else {
-			log.Fatalf("--database must be provided and database name must not be empty, or --alter must specify database name")
+			migrationContext.Log.Fatalf("--database must be provided and database name must not be empty, or --alter must specify database name")
 		}
 	}
 
@@ -203,7 +202,7 @@ func main() {
 		if parser.HasExplicitTable() {
 			migrationContext.OriginalTableName = parser.GetExplicitTable()
 		} else {
-			log.Fatalf("--table must be provided and table name must not be empty, or --alter must specify table name")
+			migrationContext.Log.Fatalf("--table must be provided and table name must not be empty, or --alter must specify table name")
 		}
 	}
 	migrationContext.Noop = !(*executeFlag)
@@ -298,7 +297,7 @@ func main() {
 		migrationContext.Log.Errore(err)
 	}
 
-	log.Infof("starting gh-ost %+v", AppVersion)
+	migrationContext.Log.Infof("starting gh-ost %+v", AppVersion)
 	acceptSignals(migrationContext)
 
 	migrator := logic.NewMigrator(migrationContext, AppVersion)
