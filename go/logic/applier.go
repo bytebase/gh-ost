@@ -8,7 +8,6 @@ package logic
 import (
 	gosql "database/sql"
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -834,7 +833,7 @@ func (this *Applier) CreateAtomicCutOverSentryTable() error {
 }
 
 // AtomicCutOverMagicLock
-func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocked chan<- error, okToUnlockTable <-chan bool, tableUnlocked chan<- error, dropCutOverSentryTableOnce *sync.Once) error {
+func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocked chan<- error, okToUnlockTable <-chan bool, tableUnlocked chan<- error) error {
 	tx, err := this.db.Begin()
 	if err != nil {
 		tableLocked <- err
@@ -912,13 +911,10 @@ func (this *Applier) AtomicCutOverMagicLock(sessionIdChan chan int64, tableLocke
 		sql.EscapeName(this.migrationContext.DatabaseName),
 		sql.EscapeName(this.migrationContext.GetOldTableName()),
 	)
-
-	dropCutOverSentryTableOnce.Do(func() {
-		if _, err := tx.Exec(query); err != nil {
-			this.migrationContext.Log.Errore(err)
-			// We DO NOT return here because we must `UNLOCK TABLES`!
-		}
-	})
+	if _, err := tx.Exec(query); err != nil {
+		this.migrationContext.Log.Errore(err)
+		// We DO NOT return here because we must `UNLOCK TABLES`!
+	}
 
 	// Tables still locked
 	this.migrationContext.Log.Infof("Releasing lock from %s.%s, %s.%s",
