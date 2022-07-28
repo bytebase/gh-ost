@@ -200,7 +200,7 @@ func (this *Migrator) consumeRowCopyComplete() {
 }
 
 func (this *Migrator) canStopStreaming() bool {
-	return atomic.LoadInt64(&this.migrationContext.CutOverCompleteFlag) != 0
+	return atomic.LoadInt64(&this.migrationContext.CutOverCompleteFlag) != 0 || atomic.LoadInt64(&this.finishedMigrating) > 0
 }
 
 // onChangelogEvent is called when a binlog event operation on the changelog table is intercepted.
