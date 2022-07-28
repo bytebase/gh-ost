@@ -208,6 +208,7 @@ type MigrationContext struct {
 	CutOverCompleteFlag                    int64
 	InCutOverCriticalSectionFlag           int64
 	PanicAbort                             chan error
+	MigrationSuccessFlag                   int64
 
 	OriginalTableColumnsOnApplier    *sql.ColumnList
 	OriginalTableColumns             *sql.ColumnList

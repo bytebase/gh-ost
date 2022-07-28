@@ -449,6 +449,7 @@ func (this *Migrator) Migrate() (err error) {
 	if err := this.hooksExecutor.onSuccess(); err != nil {
 		return err
 	}
+	atomic.StoreInt64(&this.migrationContext.MigrationSuccessFlag, 1)
 	this.migrationContext.Log.Infof("Done migrating %s.%s", sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.OriginalTableName))
 	return nil
 }
