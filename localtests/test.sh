@@ -151,7 +151,7 @@ test_single() {
     --assume-rbr \
     --initially-drop-old-table \
     --initially-drop-ghost-table \
-    --throttle-query='select timestampdiff(second, min(last_update), now()) < 5 from `~gh_ost_test_ghc`' \
+    --throttle-query='select timestampdiff(second, min(last_update), now()) < 5 from \`~gh_ost_test_ghc\`' \
     --throttle-flag-file=$throttle_flag_file \
     --serve-socket-file=/tmp/gh-ost.test.sock \
     --initially-drop-socket-file \
