@@ -163,7 +163,6 @@ test_single() {
     --stack \
     --execute ${extra_args[@]}"
   echo_dot
-  echo $cmd
   echo $cmd > $exec_command_file
   echo_dot
   bash $exec_command_file 1> $test_logfile 2>&1
