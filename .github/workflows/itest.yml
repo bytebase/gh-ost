@@ -24,6 +24,7 @@ jobs:
         with:
           file: Dockerfile.itest
           tags: ghostest
+          load: true
 
       - name: Run Docker container
         run: docker run ghostest 
