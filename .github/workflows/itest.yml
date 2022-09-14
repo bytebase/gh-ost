@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - ghostest
   pull_request:
 
 jobs:
