@@ -23,7 +23,7 @@ deploy() {
 }
 
 # first run benchmark to find out transactions per second.
-# use 30% tps to simulate workload
+# use 50% tps to simulate workload
 calc_rate() {
     tps=$(
         sysbench \
@@ -35,7 +35,7 @@ calc_rate() {
             --table-size=$table_size --time=10 \
             oltp_insert run | grep -o 'transactions:.*)' | cut -d '(' -f 2 | cut -d ' ' -f 1
     )
-    rate=$(echo "$tps 0.7" | awk '{printf "%.0f", $1*$2}')
+    rate=$(echo "$tps 0.5" | awk '{printf "%.0f", $1*$2}')
 }
 
 test_once() {
