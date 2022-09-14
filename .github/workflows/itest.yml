@@ -2,7 +2,7 @@ name: integration test
 
 on:
   schedule:
-    - cron: '5 * * * *'
+    - cron: '*/5 * * * *'
   push:
     branches:
       - main
