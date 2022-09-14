@@ -22,8 +22,8 @@ deploy() {
     ghostest-primary -uroot -e"DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
 }
 
-# first run benchmark to find out transactions per second.
-# use 50% tps to simulate workload
+# first run benchmark to find out max transactions per second.
+# use 50% of the max tps to simulate workload.
 calc_rate() {
     tps=$(
         sysbench \

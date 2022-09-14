@@ -1,0 +1,29 @@
+name: integration test
+
+on:
+  push:
+    branches:
+      - main
+      - ghostest
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v3
+        with:
+          file: Dockerfile.itest
+          tags: ghostest
+
+      - name: Run Docker container
+        run: docker run ghostest 
