@@ -1,11 +1,11 @@
 FROM --platform=linux/amd64 golang:1.18 AS build
-COPY . ~/gh-ost
+COPY . /gh-ost
 RUN apt-get update && apt-get install -y unzip\
     # build gh-ost
-    && cd ~/gh-ost \
+    && cd /gh-ost \
     && go build -o /tmp/gh-ost go/cmd/gh-ost/main.go \
     # build dbdeployer
-    && cd ~ \
+    && cd / \
     && wget -O dbdeployer.zip https://github.com/datacharmer/dbdeployer/archive/refs/tags/v1.69.1.zip \
     && unzip dbdeployer.zip \
     && cd dbdeployer-1.69.1 \
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y unzip\
 FROM --platform=linux/amd64 ubuntu:20.04
 COPY --from=build /tmp/gh-ost /usr/bin/gh-ost
 COPY --from=build /tmp/dbdeployer /usr/bin/dbdeployer
-COPY ./itest.sh ~/ 
+COPY ./itest.sh / 
 # install sysbench
 RUN apt-get update && apt-get install -y curl && curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh | bash \
     && apt-get -y install sysbench libncurses5 numactl
@@ -23,4 +23,4 @@ RUN dbdeployer init --skip-all-downloads --skip-shell-completion --skip-tarball-
     && dbdeployer downloads get-by-version 8.0.27 --minimal \
     && dbdeployer unpack mysql-8.0.27-linux-glibc2.17-x86_64-minimal.tar.xz --unpack-version 8.0.27 
 
-CMD [ "~/itest.sh" ]
+CMD [ "/itest.sh" ]
