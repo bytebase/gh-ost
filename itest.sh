@@ -9,16 +9,7 @@ rate=
 # first run benchmark to find out max transactions per second.
 # use 50% of the max tps to simulate workload.
 calc_rate() {
-    tps=$(
-        sysbench \
-            --mysql-host='127.0.0.1' \
-            --mysql-port="$primary_port" \
-            --mysql-user=ghost \
-            --mysql-password=ghost \
-            --mysql-db=db \
-            --table-size=$table_size --time=10 \
-            oltp_insert run | grep -o 'transactions:.*)' | cut -d '(' -f 2 | cut -d ' ' -f 1
-    )
+
     rate=$(echo "$tps 0.5" | awk '{printf "%.0f", $1*$2}')
 }
 
@@ -55,6 +46,17 @@ test_once_oltp_insert() {
         --mysql-db=db \
         --table-size=$table_size oltp_insert prepare
 
+    tps=$(
+        sysbench \
+            --mysql-host='127.0.0.1' \
+            --mysql-port="$primary_port" \
+            --mysql-user=ghost \
+            --mysql-password=ghost \
+            --mysql-db=db \
+            --table-size=$table_size --time=10 \
+            oltp_insert run | grep -o 'transactions:.*)' | cut -d '(' -f 2 | cut -d ' ' -f 1
+    )
+
     calc_rate
 
     sysbench \
@@ -106,8 +108,7 @@ test_once_oltp_insert() {
     fi
 }
 
-
-test_once_oltp_insert() {
+test_once_tpcc() {
     ghostest-cleanup
     ghostest-primary -uroot -e"CREATE USER IF NOT EXISTS ghost IDENTIFIED BY 'ghost'; GRANT ALL PRIVILEGES ON *.* TO ghost;"
     ghostest-primary -uroot -e"DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
@@ -115,26 +116,37 @@ test_once_oltp_insert() {
     primary_port=$(ghostest-primary -uroot -e "select @@port" -ss)
     replica_port=$(ghostest-replica -uroot -e "select @@port" -ss)
 
-    sysbench \
-        --mysql-host='127.0.0.1' \
+    /tpcc.lua prepare --mysql-host='127.0.0.1' \
         --mysql-port="$primary_port" \
         --mysql-user=ghost \
         --mysql-password=ghost \
         --mysql-db=db \
-        --table-size=$table_size oltp_insert prepare
+        --use-fk=0 \
+        --scale=1
+
+    tps=$(
+        /tpcc.lua run \
+            --mysql-host='127.0.0.1' \
+            --mysql-port="$primary_port" \
+            --mysql-user=ghost \
+            --mysql-password=ghost \
+            --mysql-db=db \
+            --time=10 \
+            --scale=1 \
+            | grep -o 'transactions:.*)' | cut -d '(' -f 2 | cut -d ' ' -f 1
+    )
 
     calc_rate
 
-    sysbench \
+    /tpcc.lua run \
         --mysql-host='127.0.0.1' \
         --mysql-port="$primary_port" \
         --mysql-user=ghost \
         --mysql-password=ghost \
         --mysql-db=db \
-        --table-size=$table_size \
         --time=10000 \
         --rate=$rate \
-        oltp_insert run &
+        &
 
     gh-ost \
         --execute \
@@ -163,8 +175,8 @@ test_once_oltp_insert() {
         --initially-drop-socket-file \
         --serve-socket-file=/tmp/gh-ost.sock
 
-    ghostest-replica -e"select * from db.sbtest1" -ss >/tmp/ori
-    ghostest-replica -e"select * from db.\`~sbtest1_gho\`" -ss >/tmp/gho
+    ghostest-replica -e"select * from db.order_line1" -ss >/tmp/ori
+    ghostest-replica -e"select * from db.\`~order_line1_gho\`" -ss >/tmp/gho
 
     ori_sum="$(md5sum /tmp/ori | cut -d " " -f1)"
     gho_sum="$(md5sum /tmp/gho | cut -d " " -f1)"
@@ -174,4 +186,7 @@ test_once_oltp_insert() {
     fi
 }
 
+deploy
 test_once_oltp_insert
+test_once_tpcc
+exit 0
