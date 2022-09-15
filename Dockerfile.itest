@@ -9,11 +9,16 @@ RUN apt-get update && apt-get install -y unzip\
     && wget -O dbdeployer.zip https://github.com/datacharmer/dbdeployer/archive/refs/tags/v1.69.1.zip \
     && unzip dbdeployer.zip \
     && cd dbdeployer-1.69.1 \
-    && go build -o /tmp/dbdeployer main.go
+    && go build -o /tmp/dbdeployer main.go \
+    # tpcc.lua
+    && cd / \
+    && wget -O tpcc.zip https://github.com/Percona-Lab/sysbench-tpcc/archive/refs/heads/master.zip \
+    && unzip tpcc.zip
 
 FROM --platform=linux/amd64 ubuntu:20.04
 COPY --from=build /tmp/gh-ost /usr/bin/gh-ost
 COPY --from=build /tmp/dbdeployer /usr/bin/dbdeployer
+COPY --from=build /sysbench-tpcc-master/*.lua /
 COPY ./itest.sh / 
 # install sysbench
 RUN apt-get update && apt-get install -y curl && curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh | bash \
