@@ -161,7 +161,7 @@ test_once_tpcc() {
         --port="$replica_port" \
         --assume-master-host=127.0.0.1:${primary_port} \
         --database='db' \
-        --table='sbtest1' \
+        --table='order_line1' \
         --verbose \
         --debug \
         --test-on-replica \
