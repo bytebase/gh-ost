@@ -1,5 +1,6 @@
 #!/bin/bash
 set -x
+set -e
 table_size=100000
 primary_port=
 replica_port=
@@ -35,6 +36,7 @@ test_once_oltp_insert() {
     ghostest-primary -uroot -e"DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
 
     primary_port=$(ghostest-primary -uroot -e "select @@port" -ss)
+    sleep 1
     replica_port=$(ghostest-replica -uroot -e "select @@port" -ss)
 
     sysbench \
@@ -116,6 +118,7 @@ test_once_tpcc() {
     ghostest-primary -uroot -e"DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
 
     primary_port=$(ghostest-primary -uroot -e "select @@port" -ss)
+    sleep 1
     replica_port=$(ghostest-replica -uroot -e "select @@port" -ss)
 
     /tpcc.lua prepare --mysql-host='127.0.0.1' \
