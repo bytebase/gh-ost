@@ -103,6 +103,8 @@ test_once_oltp_insert() {
     ori_sum="$(md5sum /tmp/ori | cut -d " " -f1)"
     gho_sum="$(md5sum /tmp/gho | cut -d " " -f1)"
 
+    pkill sysbench
+
     if [ "$ori_sum" != "$gho_sum" ]; then
         exit 1
     fi
@@ -180,6 +182,8 @@ test_once_tpcc() {
 
     ori_sum="$(md5sum /tmp/ori | cut -d " " -f1)"
     gho_sum="$(md5sum /tmp/gho | cut -d " " -f1)"
+
+    pkill sysbench
 
     if [ "$ori_sum" != "$gho_sum" ]; then
         exit 1
