@@ -9,7 +9,6 @@ rate=
 # first run benchmark to find out max transactions per second.
 # use 50% of the max tps to simulate workload.
 calc_rate() {
-
     rate=$(echo "$tps 0.5" | awk '{printf "%.0f", $1*$2}')
 }
 
@@ -135,8 +134,8 @@ test_once_tpcc() {
             --mysql-password=ghost \
             --mysql-db=db \
             --time=10 \
-            --scale=1 \
-            | grep -o 'transactions:.*)' | cut -d '(' -f 2 | cut -d ' ' -f 1
+            --scale=1 |
+            grep -o 'transactions:.*)' | cut -d '(' -f 2 | cut -d ' ' -f 1
     )
 
     calc_rate
