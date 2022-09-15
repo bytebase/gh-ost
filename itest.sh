@@ -68,6 +68,7 @@ test_once_oltp_insert() {
         --table-size=$table_size \
         --time=10000 \
         --rate=$rate \
+        --report-interval=10s \
         oltp_insert run &
 
     gh-ost \
@@ -148,6 +149,7 @@ test_once_tpcc() {
         --mysql-db=db \
         --time=10000 \
         --rate=$rate \
+        --report-interval=10s \
         &
 
     gh-ost \
