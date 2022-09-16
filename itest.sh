@@ -5,7 +5,6 @@ primary_port=
 replica_port=
 tps=
 rate=
-ncore=$(nproc)
 
 # first run benchmark to find out max transactions per second.
 # use 50% of the max tps to simulate workload.
@@ -43,7 +42,6 @@ test_once_oltp_insert() {
         --mysql-user=ghost \
         --mysql-password=ghost \
         --mysql-db=db \
-        --threads=$ncore \
         --table-size=$table_size oltp_insert prepare
 
     tps=$(
@@ -53,7 +51,6 @@ test_once_oltp_insert() {
             --mysql-user=ghost \
             --mysql-password=ghost \
             --mysql-db=db \
-            --threads=$ncore \
             --table-size=$table_size --time=10 \
             oltp_insert run | grep -o 'transactions:.*)' | cut -d '(' -f 2 | cut -d ' ' -f 1
     )
@@ -69,7 +66,6 @@ test_once_oltp_insert() {
         --table-size=$table_size \
         --time=10000 \
         --rate=$rate \
-        --threads=$ncore \
         --report-interval=10 \
         oltp_insert run &
 
@@ -127,7 +123,6 @@ test_once_tpcc() {
         --mysql-user=ghost \
         --mysql-password=ghost \
         --mysql-db=db \
-        --threads=$ncore \
         --use-fk=0 \
         --scale=1
 
@@ -138,7 +133,6 @@ test_once_tpcc() {
             --mysql-user=ghost \
             --mysql-password=ghost \
             --mysql-db=db \
-            --threads=$ncore \
             --time=10 \
             --scale=1 |
             grep -o 'transactions:.*)' | cut -d '(' -f 2 | cut -d ' ' -f 1
@@ -152,7 +146,6 @@ test_once_tpcc() {
         --mysql-user=ghost \
         --mysql-password=ghost \
         --mysql-db=db \
-        --threads=$ncore \
         --time=10000 \
         --rate=$rate \
         --report-interval=10 \
