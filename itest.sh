@@ -35,7 +35,6 @@ test_once_oltp_insert() {
     ghostest-primary -uroot -e"DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
 
     primary_port=$(ghostest-primary -uroot -e "select @@port" -ss)
-    replica_port=$(ghostest-replica -uroot -e "select @@port" -ss)
 
     sysbench \
         --mysql-host='127.0.0.1' \
@@ -69,6 +68,8 @@ test_once_oltp_insert() {
         --rate=$rate \
         --report-interval=10 \
         oltp_insert run &
+
+    replica_port=$(ghostest-replica -uroot -e "select @@port" -ss)
 
     gh-ost \
         --execute \
@@ -116,7 +117,6 @@ test_once_tpcc() {
     ghostest-primary -uroot -e"DROP DATABASE IF EXISTS db; CREATE DATABASE db;"
 
     primary_port=$(ghostest-primary -uroot -e "select @@port" -ss)
-    replica_port=$(ghostest-replica -uroot -e "select @@port" -ss)
 
     /tpcc.lua prepare --mysql-host='127.0.0.1' \
         --mysql-port="$primary_port" \
@@ -150,6 +150,8 @@ test_once_tpcc() {
         --rate=$rate \
         --report-interval=10 \
         &
+
+    replica_port=$(ghostest-replica -uroot -e "select @@port" -ss)
 
     gh-ost \
         --execute \
