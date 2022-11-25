@@ -292,7 +292,7 @@ func NewMigrationContext() *MigrationContext {
 }
 
 func (this *MigrationContext) SetConnectionConfig(storageEngine string) error {
-	transactionIsolation := "REPEATABLE-READ"
+	var transactionIsolation string
 	switch storageEngine {
 	case "rocksdb":
 		transactionIsolation = "READ-COMMITTED"
