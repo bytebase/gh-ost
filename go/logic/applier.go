@@ -9,7 +9,6 @@ import (
 	gosql "database/sql"
 	"fmt"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
