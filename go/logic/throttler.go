@@ -180,7 +180,6 @@ func (this *Throttler) collectReplicationLag(firstThrottlingCollected chan<- boo
 
 // collectControlReplicasLag polls all the control replicas to get maximum lag value
 func (this *Throttler) collectControlReplicasLag() {
-
 	if atomic.LoadInt64(&this.migrationContext.HibernateUntil) > 0 {
 		return
 	}
@@ -308,6 +307,8 @@ func (this *Throttler) collectThrottleHTTPStatus(firstThrottlingCollected chan<-
 		if err != nil {
 			return false, err
 		}
+		defer resp.Body.Close()
+
 		atomic.StoreInt64(&this.migrationContext.ThrottleHTTPStatusCode, int64(resp.StatusCode))
 		return false, nil
 	}

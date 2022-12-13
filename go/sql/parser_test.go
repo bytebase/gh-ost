@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 GitHub Inc.
+   Copyright 2022 GitHub Inc.
 	 See https://github.com/github/gh-ost/blob/master/LICENSE
 */
 
@@ -40,7 +40,6 @@ func TestParseAlterStatementTrivialRename(t *testing.T) {
 }
 
 func TestParseAlterStatementWithAutoIncrement(t *testing.T) {
-
 	statements := []string{
 		"auto_increment=7",
 		"auto_increment = 7",
@@ -100,37 +99,37 @@ func TestTokenizeAlterStatement(t *testing.T) {
 	parser := NewAlterTableParser()
 	{
 		alterStatement := "add column t int"
-		tokens, _ := parser.tokenizeAlterStatement(alterStatement)
+		tokens := parser.tokenizeAlterStatement(alterStatement)
 		test.S(t).ExpectTrue(reflect.DeepEqual(tokens, []string{"add column t int"}))
 	}
 	{
 		alterStatement := "add column t int, change column i int"
-		tokens, _ := parser.tokenizeAlterStatement(alterStatement)
+		tokens := parser.tokenizeAlterStatement(alterStatement)
 		test.S(t).ExpectTrue(reflect.DeepEqual(tokens, []string{"add column t int", "change column i int"}))
 	}
 	{
 		alterStatement := "add column t int, change column i int 'some comment'"
-		tokens, _ := parser.tokenizeAlterStatement(alterStatement)
+		tokens := parser.tokenizeAlterStatement(alterStatement)
 		test.S(t).ExpectTrue(reflect.DeepEqual(tokens, []string{"add column t int", "change column i int 'some comment'"}))
 	}
 	{
 		alterStatement := "add column t int, change column i int 'some comment, with comma'"
-		tokens, _ := parser.tokenizeAlterStatement(alterStatement)
+		tokens := parser.tokenizeAlterStatement(alterStatement)
 		test.S(t).ExpectTrue(reflect.DeepEqual(tokens, []string{"add column t int", "change column i int 'some comment, with comma'"}))
 	}
 	{
 		alterStatement := "add column t int, add column d decimal(10,2)"
-		tokens, _ := parser.tokenizeAlterStatement(alterStatement)
+		tokens := parser.tokenizeAlterStatement(alterStatement)
 		test.S(t).ExpectTrue(reflect.DeepEqual(tokens, []string{"add column t int", "add column d decimal(10,2)"}))
 	}
 	{
 		alterStatement := "add column t int, add column e enum('a','b','c')"
-		tokens, _ := parser.tokenizeAlterStatement(alterStatement)
+		tokens := parser.tokenizeAlterStatement(alterStatement)
 		test.S(t).ExpectTrue(reflect.DeepEqual(tokens, []string{"add column t int", "add column e enum('a','b','c')"}))
 	}
 	{
 		alterStatement := "add column t int(11), add column e enum('a','b','c')"
-		tokens, _ := parser.tokenizeAlterStatement(alterStatement)
+		tokens := parser.tokenizeAlterStatement(alterStatement)
 		test.S(t).ExpectTrue(reflect.DeepEqual(tokens, []string{"add column t int(11)", "add column e enum('a','b','c')"}))
 	}
 }
@@ -150,7 +149,6 @@ func TestSanitizeQuotesFromAlterStatement(t *testing.T) {
 }
 
 func TestParseAlterStatementDroppedColumns(t *testing.T) {
-
 	{
 		parser := NewAlterTableParser()
 		statement := "drop column b"
@@ -190,7 +188,6 @@ func TestParseAlterStatementDroppedColumns(t *testing.T) {
 }
 
 func TestParseAlterStatementRenameTable(t *testing.T) {
-
 	{
 		parser := NewAlterTableParser()
 		statement := "drop column b"
@@ -230,7 +227,6 @@ func TestParseAlterStatementRenameTable(t *testing.T) {
 }
 
 func TestParseAlterStatementExplicitTable(t *testing.T) {
-
 	{
 		parser := NewAlterTableParser()
 		statement := "drop column b"

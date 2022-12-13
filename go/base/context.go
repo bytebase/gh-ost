@@ -92,6 +92,7 @@ type MigrationContext struct {
 	AssumeRBR                bool
 	SkipForeignKeyChecks     bool
 	SkipStrictMode           bool
+	AllowZeroInDate          bool
 	NullableUniqueKeyAllowed bool
 	ApproveRenamedColumns    bool
 	SkipRenamedColumns       bool
@@ -100,6 +101,7 @@ type MigrationContext struct {
 	AliyunRDS                bool
 	GoogleCloudPlatform      bool
 	AzureMySQL               bool
+	AttemptInstantDDL        bool
 
 	config            ContextConfig
 	configMutex       *sync.Mutex
@@ -289,6 +291,19 @@ func NewMigrationContext() *MigrationContext {
 	}
 }
 
+func (this *MigrationContext) SetConnectionConfig(storageEngine string) error {
+	var transactionIsolation string
+	switch storageEngine {
+	case "rocksdb":
+		transactionIsolation = "READ-COMMITTED"
+	default:
+		transactionIsolation = "REPEATABLE-READ"
+	}
+	this.InspectorConnectionConfig.TransactionIsolation = transactionIsolation
+	this.ApplierConnectionConfig.TransactionIsolation = transactionIsolation
+	return nil
+}
+
 func getSafeTableName(baseName string, suffix string) string {
 	name := fmt.Sprintf("~%s_%s", baseName, suffix)
 	if len(name) <= mysql.MaxTableNameLength {
@@ -435,6 +450,10 @@ func (this *MigrationContext) IsTransactionalTable() bool {
 			return true
 		}
 	case "tokudb":
+		{
+			return true
+		}
+	case "rocksdb":
 		{
 			return true
 		}
@@ -869,7 +888,7 @@ func (this *MigrationContext) ReadConfigFile() error {
 	if cfg.Section("osc").HasKey("chunk_size") {
 		this.config.Osc.Chunk_Size, err = cfg.Section("osc").Key("chunk_size").Int64()
 		if err != nil {
-			return fmt.Errorf("Unable to read osc chunk size: %s", err.Error())
+			return fmt.Errorf("Unable to read osc chunk size: %w", err)
 		}
 	}
 
@@ -884,7 +903,7 @@ func (this *MigrationContext) ReadConfigFile() error {
 	if cfg.Section("osc").HasKey("max_lag_millis") {
 		this.config.Osc.Max_Lag_Millis, err = cfg.Section("osc").Key("max_lag_millis").Int64()
 		if err != nil {
-			return fmt.Errorf("Unable to read max lag millis: %s", err.Error())
+			return fmt.Errorf("Unable to read max lag millis: %w", err)
 		}
 	}
 

@@ -8,6 +8,7 @@ package logic
 import (
 	"context"
 	gosql "database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -132,10 +133,7 @@ func (this *Inspector) inspectOriginalAndGhostTables() (err error) {
 	if err != nil {
 		return err
 	}
-	sharedUniqueKeys, err := this.getSharedUniqueKeys(this.migrationContext.OriginalTableUniqueKeys, this.migrationContext.GhostTableUniqueKeys)
-	if err != nil {
-		return err
-	}
+	sharedUniqueKeys := this.getSharedUniqueKeys(this.migrationContext.OriginalTableUniqueKeys, this.migrationContext.GhostTableUniqueKeys)
 	for i, sharedUniqueKey := range sharedUniqueKeys {
 		this.applyColumnTypes(this.migrationContext.DatabaseName, this.migrationContext.OriginalTableName, &sharedUniqueKey.Columns)
 		uniqueKeyIsValid := true
@@ -191,6 +189,9 @@ func (this *Inspector) inspectOriginalAndGhostTables() (err error) {
 		if column.Name == mappedColumn.Name && column.Type == sql.EnumColumnType && mappedColumn.Charset != "" {
 			this.migrationContext.MappedSharedColumns.SetEnumToTextConversion(column.Name)
 			this.migrationContext.MappedSharedColumns.SetEnumValues(column.Name, column.EnumValues)
+		}
+		if column.Name == mappedColumn.Name && column.Charset != mappedColumn.Charset {
+			this.migrationContext.SharedColumns.SetCharsetConversion(column.Name, column.Charset, mappedColumn.Charset)
 		}
 	}
 
@@ -554,13 +555,11 @@ func (this *Inspector) CountTableRows(ctx context.Context) error {
 	query := fmt.Sprintf(`select /* gh-ost */ count(*) as count_rows from %s.%s`, sql.EscapeName(this.migrationContext.DatabaseName), sql.EscapeName(this.migrationContext.OriginalTableName))
 	var rowsEstimate int64
 	if err := conn.QueryRowContext(ctx, query).Scan(&rowsEstimate); err != nil {
-		switch err {
-		case context.Canceled, context.DeadlineExceeded:
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			this.migrationContext.Log.Infof("exact row count cancelled (%s), likely because I'm about to cut over. I'm going to kill that query.", ctx.Err())
 			return mysql.Kill(this.db, connectionID)
-		default:
-			return err
 		}
+		return err
 	}
 
 	// row count query finished. nil out the cancel func, so the main migration thread
@@ -728,7 +727,7 @@ func (this *Inspector) getCandidateUniqueKeys(tableName string) (uniqueKeys [](*
 
 // getSharedUniqueKeys returns the intersection of two given unique keys,
 // testing by list of columns
-func (this *Inspector) getSharedUniqueKeys(originalUniqueKeys, ghostUniqueKeys [](*sql.UniqueKey)) (uniqueKeys [](*sql.UniqueKey), err error) {
+func (this *Inspector) getSharedUniqueKeys(originalUniqueKeys, ghostUniqueKeys []*sql.UniqueKey) (uniqueKeys []*sql.UniqueKey) {
 	// We actually do NOT rely on key name, just on the set of columns. This is because maybe
 	// the ALTER is on the name itself...
 	for _, originalUniqueKey := range originalUniqueKeys {
@@ -738,7 +737,7 @@ func (this *Inspector) getSharedUniqueKeys(originalUniqueKeys, ghostUniqueKeys [
 			}
 		}
 	}
-	return uniqueKeys, nil
+	return uniqueKeys
 }
 
 // getSharedColumns returns the intersection of two lists of columns in same order as the first list

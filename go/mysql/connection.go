@@ -1,5 +1,5 @@
 /*
-   Copyright 2016 GitHub Inc.
+   Copyright 2022 GitHub Inc.
 	 See https://github.com/github/gh-ost/blob/master/LICENSE
 */
 
@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"strings"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -22,12 +23,13 @@ const (
 
 // ConnectionConfig is the minimal configuration required to connect to a MySQL server
 type ConnectionConfig struct {
-	Key        InstanceKey
-	User       string
-	Password   string
-	ImpliedKey *InstanceKey
-	tlsConfig  *tls.Config
-	Timeout    float64
+	Key                  InstanceKey
+	User                 string
+	Password             string
+	ImpliedKey           *InstanceKey
+	tlsConfig            *tls.Config
+	Timeout              float64
+	TransactionIsolation string
 }
 
 func NewConnectionConfig() *ConnectionConfig {
@@ -41,11 +43,12 @@ func NewConnectionConfig() *ConnectionConfig {
 // DuplicateCredentials creates a new connection config with given key and with same credentials as this config
 func (this *ConnectionConfig) DuplicateCredentials(key InstanceKey) *ConnectionConfig {
 	config := &ConnectionConfig{
-		Key:       key,
-		User:      this.User,
-		Password:  this.Password,
-		tlsConfig: this.tlsConfig,
-		Timeout:   this.Timeout,
+		Key:                  key,
+		User:                 this.User,
+		Password:             this.Password,
+		tlsConfig:            this.tlsConfig,
+		Timeout:              this.Timeout,
+		TransactionIsolation: this.TransactionIsolation,
 	}
 	config.ImpliedKey = &config.Key
 	return config
@@ -112,12 +115,23 @@ func (this *ConnectionConfig) GetDBUri(databaseName string) string {
 		// Wrap IPv6 literals in square brackets
 		hostname = fmt.Sprintf("[%s]", hostname)
 	}
-	interpolateParams := true
+
 	// go-mysql-driver defaults to false if tls param is not provided; explicitly setting here to
 	// simplify construction of the DSN below.
 	tlsOption := "false"
 	if this.tlsConfig != nil {
 		tlsOption = TLS_CONFIG_KEY
 	}
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?timeout=%fs&readTimeout=%fs&writeTimeout=%fs&interpolateParams=%t&autocommit=true&charset=utf8mb4,utf8,latin1&tls=%s", this.User, this.Password, hostname, this.Key.Port, databaseName, this.Timeout, this.Timeout, this.Timeout, interpolateParams, tlsOption)
+	connectionParams := []string{
+		"autocommit=true",
+		"charset=utf8mb4,utf8,latin1",
+		"interpolateParams=true",
+		fmt.Sprintf("tls=%s", tlsOption),
+		fmt.Sprintf("transaction_isolation=%q", this.TransactionIsolation),
+		fmt.Sprintf("timeout=%fs", this.Timeout),
+		fmt.Sprintf("readTimeout=%fs", this.Timeout),
+		fmt.Sprintf("writeTimeout=%fs", this.Timeout),
+	}
+
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s", this.User, this.Password, hostname, this.Key.Port, databaseName, strings.Join(connectionParams, "&"))
 }
