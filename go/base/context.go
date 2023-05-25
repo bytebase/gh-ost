@@ -233,7 +233,8 @@ type MigrationContext struct {
 
 	recentBinlogCoordinates mysql.BinlogCoordinates
 
-	Log zapLogger
+	Log                              zapLogger
+	BinlogSyncerMaxReconnectAttempts int
 }
 
 type Logger interface {
