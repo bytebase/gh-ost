@@ -414,9 +414,6 @@ func (this *MigrationContext) SetCutOverLockTimeoutSeconds(timeoutSeconds int64)
 	if timeoutSeconds < 1 {
 		return fmt.Errorf("Minimal timeout is 1sec. Timeout remains at %d", this.CutOverLockTimeoutSeconds)
 	}
-	if timeoutSeconds > 10 {
-		return fmt.Errorf("Maximal timeout is 10sec. Timeout remains at %d", this.CutOverLockTimeoutSeconds)
-	}
 	this.CutOverLockTimeoutSeconds = timeoutSeconds
 	return nil
 }
