@@ -1157,7 +1157,7 @@ func (this *Migrator) initiateApplier() error {
 
 // iterateChunks iterates the existing table rows, and generates a copy task of
 // a chunk of rows onto the ghost table.
-func (this *Migrator) iterateChunks() error {
+func (this *Migrator) iterateChunks() {
 	terminateRowIteration := func(err error) error {
 		this.rowCopyComplete <- err
 		return this.migrationContext.Log.Errore(err)
@@ -1166,13 +1166,13 @@ func (this *Migrator) iterateChunks() error {
 		this.migrationContext.Log.Debugf("Noop operation; not really copying data")
 		terminateRowIteration(nil)
 		close(this.rowCopyComplete)
-		return nil
+		return
 	}
 	if this.migrationContext.MigrationRangeMinValues == nil {
 		this.migrationContext.Log.Debugf("No rows found in table. Rowcopy will be implicitly empty")
 		terminateRowIteration(nil)
 		close(this.rowCopyComplete)
-		return nil
+		return
 	}
 
 	var hasNoFurtherRangeFlag int64
@@ -1183,7 +1183,7 @@ func (this *Migrator) iterateChunks() error {
 			// Done
 			// There's another such check down the line
 			close(this.rowCopyComplete)
-			return nil
+			return
 		}
 		copyRowsFunc := func() error {
 			if atomic.LoadInt64(&this.rowCopyCompleteFlag) == 1 || atomic.LoadInt64(&hasNoFurtherRangeFlag) == 1 {
