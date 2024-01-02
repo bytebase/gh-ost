@@ -97,9 +97,9 @@ func TestHooksExecutorExecuteHooks(t *testing.T) {
 			case "GH_OST_EXECUTING_HOST":
 				tests.S(t).ExpectEquals(split[1], migrationContext.Hostname)
 			case "GH_OST_GHOST_TABLE_NAME":
-				tests.S(t).ExpectEquals(split[1], fmt.Sprintf("_%s_gho", migrationContext.OriginalTableName))
+				tests.S(t).ExpectEquals(split[1], fmt.Sprintf("~%s_gho", migrationContext.OriginalTableName))
 			case "GH_OST_OLD_TABLE_NAME":
-				tests.S(t).ExpectEquals(split[1], fmt.Sprintf("_%s_del", migrationContext.OriginalTableName))
+				tests.S(t).ExpectEquals(split[1], fmt.Sprintf("~%s_del", migrationContext.OriginalTableName))
 			case "GH_OST_PROGRESS":
 				progress, _ := strconv.ParseFloat(split[1], 64)
 				tests.S(t).ExpectEquals(progress, 50.0)
